@@ -6,6 +6,7 @@
 - name: gendex:processor-0-1
   label: Processor Label
   type: gendex:subtype
+  persistence: RAW
   description: >
     Processor description.
   input:
