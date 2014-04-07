@@ -1,0 +1,39 @@
+# =====================
+# Processors for GenDex
+# =====================
+---
+
+- name: gendex:processor-0-1
+  label: Processor Label
+  type: gendex:subtype
+  description: >
+    Processor description.
+  input:
+    - name: genome
+      label: Reference genome
+      type: data:genome:fasta
+      required: true
+  output:
+    - name: out
+      label: Expressions JSON
+      type: basic:file
+  static:
+    - name: name
+      label: Name
+      type: basic:string
+      default: "Did something with {{ genome.fasta.file|basename }}"
+    - name: tags
+      label: Tags
+      type: list:basic:string
+      default: ["biolab"]
+      placeholder: new tag
+  var:
+    - name: notes
+      label: Notes
+      type: basic:text
+  run:
+    runtime: polyglot
+    bash: |
+      echo "{\"proc.progress\":0.1}"
+      touch foo
+      echo "{\"proc.progress\":0.7,\"out\":{\"file\": \"foo\"}}"
