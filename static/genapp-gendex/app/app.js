@@ -1,6 +1,6 @@
 'use strict';
 
-var gendex = angular.module('gendex', ['ngRoute']);
+var gendex = angular.module('gendex', ['gendex.widgets', 'ngRoute', 'ngGrid']);
 
 gendex.config(['$routeProvider', function ($routeProvider) {
     $routeProvider.otherwise({
