@@ -8,9 +8,9 @@ app.directive('geneplot', function() {
         scope: {},
         replace: false,
         templateUrl: '/static/genapp-gendex/partials/directives/geneplot.html',
-        controller: ['$scope', '$attrs', function ($scope, $attrs) {
+        controller: ['$scope', '$http', '$element', function ($scope, $http, $element) {
 
-
+            console.log('Geneplot');
 
         }]
     }
