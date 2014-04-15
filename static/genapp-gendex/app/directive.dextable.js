@@ -10,6 +10,7 @@ app.directive('dextable', function() {
         templateUrl: '/static/genapp-gendex/partials/directives/dextable.html',
         controller: ['$scope', function ($scope) {
 
+
             $scope.myData = [
                 {gene: "hsa-miR-140-5p", "T1C": 4194, "LT2C": 1783, "LT3C": 2718, "LT1P": 5046, "LT2P": 1483, "LT3P": 6486, "logFC": 2.70295395, "logCPM": 6.209511451, "PValue": 0.002689221, "FDR": 0.50172365},
                 {gene: "hsa-miR-140-5p", "T1C": 4194, "LT2C": 1783, "LT3C": 2718, "LT1P": 5046, "LT2P": 1483, "LT3P": 6486, "logFC": 2.70295395, "logCPM": 6.209511451, "PValue": 0.002689221, "FDR": 0.50172365},

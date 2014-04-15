@@ -10,7 +10,8 @@ app.directive('geneplot', function() {
         templateUrl: '/static/genapp-gendex/partials/directives/geneplot.html',
         controller: ['$scope', '$http', '$element', function ($scope, $http, $element) {
 
-            console.log('Geneplot');
+            var flotElem = $element.find('div.flotChart');
+            $.plot(flotElem, [ [[0, 0], [1, 1]] ], { yaxis: { max: 1 }, xaxis : {max: 1 } });
 
         }]
     }
