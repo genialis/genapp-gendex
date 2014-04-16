@@ -5,14 +5,17 @@ var app = angular.module('gendex.widgets');
 app.directive('geneplot', function() {
     return {
         restrict: 'A',
-        scope: {},
+        scope: {
+            shared: '='
+        },
         replace: false,
         templateUrl: '/static/genapp-gendex/partials/directives/geneplot.html',
-        controller: function ($scope, $http, $element, $timeout, $compile, StorageRequest, notify) {
-            console.log("inside volcanoplot ctrl");
-            $scope.shared.elements.volcanoplot = $element;
+        controller: function ($scope, $http, $element, $timeout, $compile) {  //storageRequest, notify
+            console.log("inside genplot ctrl");
+//            $scope.shared.elements.volcanoplot = $element;
 
             var volcanoModal;
+/*
             $scope.$watchCollection('shared.differentialExpressionsDataObjects', function (dataObjs) {
                 if(!dataObjs) return;
                 if(dataObjs.length <= 0) return;
@@ -26,6 +29,7 @@ app.directive('geneplot', function() {
 
                 $scope.shared.selectedDiffType = $scope.possibleTypes[0].val;
             });
+*/
             function getPointsData(json) {
                 //json.flot contains some flot properties, like data
                 var allPoints = $.extend({}, json.flot, {
@@ -78,7 +82,7 @@ app.directive('geneplot', function() {
                     points: [],
                     json: {}
                 };
-
+/*
                 $scope.oldRequest = StorageRequest.get({id: $scope.shared.selectedDiffType}, function (data) {
                     $scope.differentialData.json = data.json;
                     $scope.differentialData.dictIxGenes = data.json.genes;
@@ -94,21 +98,27 @@ app.directive('geneplot', function() {
                     else
                         notify({message: "An error occured while getting storage objects for VolcanoPlot, sorry", type: 'danger'});
                 });
+*/
             };
-
+/*
             $scope.$watch('refreshingData', function (val) {
                 //getting to <window> scope...
                 $element.parent().scope().$emit( val ? 'dimOn' : 'dimOff' );
                 $element.parent().scope().$emit( val ? 'loadOn' : 'loadOff' );
             });
-
+*/
             $scope.replot = function () {
                 $scope.differentialData.points = getPointsData($scope.differentialData.json);
-
+/*
                 var newSize = {
                     width: $element.parent().width() - 30,
                     height: $element.parent().height() - $element.find('.graphHead').height() -
                             $element.parents('.windowContent').siblings('.graphHandle').height()
+                };
+*/
+                var newSize = {
+                    width: $element.width(),
+                    height: $element.height()
                 };
 
                 var flotOptions = {
@@ -158,7 +168,7 @@ app.directive('geneplot', function() {
                 try {
                     $timeout(function () { //end of transition/animation
                         var pTime1 = performance.now();
-                        flotPlot = $.plot(flotElem, $scope.differentialData.points, flotOptions);
+                        flotPlot = $.plot(flotElem, [$scope.shared.data, $scope.shared.data], flotOptions);
                         var pTime2 = performance.now();
                         if(pTime2 - pTime1 > 100) console.log('TODO: speed up Volcano plot draw time: ', pTime2 - pTime1, 'ms');
                     }, 200);
@@ -172,7 +182,7 @@ app.directive('geneplot', function() {
             var delayedReload = _.debounce($scope.reload, 200);
             var delayedReplot = _.debounce($scope.replot, 200);
             var flotElem = $element.find('div.flotChart');
-
+/*
             $scope.$watchCollection('shared.selectedGenes', delayedReplot);
             $scope.$watchCollection('shared.allGenes', delayedReload);
             $scope.$watch('shared.selectedDiffType', delayedReload);
@@ -180,7 +190,9 @@ app.directive('geneplot', function() {
             $scope.$watch(function () { return $element.width()+','+$element.height(); }, function (v) {
                 delayedReplot();
             });
+*/
 
+            delayedReplot();
 
             function calcBounding(rect) {
                 var x = Math.min(rect.start.x, rect.end.x);
@@ -400,5 +412,6 @@ app.directive('geneplot', function() {
                 }
             }
             tooltips();
-        }    }
+        }
+    }
 });
