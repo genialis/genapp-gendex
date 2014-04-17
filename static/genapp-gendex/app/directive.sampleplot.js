@@ -11,7 +11,22 @@ app.directive('sampleplot', function() {
         controller: ['$scope', '$attrs', '$element', function ($scope, $attrs, $element) {
 
             var flotElem = $element.find('div.flotChart');
-            $.plot(flotElem, [ [[0, 0], [0.5, 0.5]] ], { yaxis: { max: 1 }, xaxis : {max: 1 } });
+            $.plot(flotElem, [ [[0, 0], [0.5, 0.5]] ], {
+                yaxis: {
+                    max: 1
+                },
+                xaxis: {
+                    max: 1
+                },
+                grid: {
+                    borderWidth: {
+                        top: 0,
+                        right: 0,
+                        bottom: 1,
+                        left: 1
+                    }
+                }
+            });
 
         }]
     }

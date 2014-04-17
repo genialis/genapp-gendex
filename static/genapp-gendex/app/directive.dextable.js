@@ -10,7 +10,7 @@ app.directive('dextable', function() {
         },
         replace: false,
         templateUrl: '/static/genapp-gendex/partials/directives/dextable.html',
-        controller: ['$scope', function ($scope) {
+        controller: ['$scope', '$filter', function ($scope, $filter) {
             console.log('inside dextable ctrl');
 
             $scope.shared.data = [
@@ -139,11 +139,10 @@ app.directive('dextable', function() {
                 filterOptions: $scope.filterOptions,
                 columnDefs: $scope.columnDefs
             };
-/*
-            $scope.$watch('filterOptions.filterText', function() {
-                console.log($scope.shared.data.length);
+
+            $scope.$watch('filterOptions.filterText', function(val) {
+                $scope.shared.filteredRows = $filter('filter')($scope.shared.data, val);
             });
-*/
         }]
     }
 });
