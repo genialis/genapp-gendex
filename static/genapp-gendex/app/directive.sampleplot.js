@@ -17,7 +17,7 @@ app.directive('sampleplot', function() {
 
             $scope.selectedNorm = 2;
 
-            mds = function(distances, dimensions) {
+            function mds(distances, dimensions) {
                 dimensions = dimensions || 2;
 
                 var M = numeric.mul(-.5, numeric.pow(distances, 2));
