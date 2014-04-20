@@ -15,17 +15,73 @@ app.directive('sampleplot', function() {
 
             var flotElem = $element.find('div.flotChart');
 
+            $scope.selectedNorm = 2;
+
+            mds = function(distances, dimensions) {
+                dimensions = dimensions || 2;
+
+                var M = numeric.mul(-.5, numeric.pow(distances, 2));
+
+                function mean(A) { return numeric.div(numeric.add.apply(null, A), A.length); }
+                var rowMeans = mean(M),
+                    colMeans = mean(numeric.transpose(M)),
+                    totalMean = mean(rowMeans);
+
+                for (var i = 0; i < M.length; ++i) {
+                    for (var j = 0; j < M[0].length; ++j) {
+                        M[i][j] += totalMean - rowMeans[i] - colMeans[j];
+                    }
+                }
+
+                var ret = numeric.svd(M),
+                    eigenValues = numeric.sqrt(ret.S);
+                return ret.U.map(function(row) {
+                    return numeric.mul(row, eigenValues).splice(0, dimensions);
+                });
+            };
+
             $scope.replot = function () {
-
-
                 console.log('replot sampleplot');
 
-                var lt1c = _.pluck($scope.shared.filteredRows, 'lt1c'),
-                    lt2c = _.pluck($scope.shared.filteredRows, 'lt2c'),
-                    lt3c = _.pluck($scope.shared.filteredRows, 'lt3c'),
-                    lt1p = _.pluck($scope.shared.filteredRows, 'lt1p'),
-                    lt2p = _.pluck($scope.shared.filteredRows, 'lt2p'),
-                    lt3p = _.pluck($scope.shared.filteredRows, 'lt3p');
+                var columns = ['lt1c', 'lt2c', 'lt3c', 'lt1p', 'lt2p', 'lt3p'],
+                    vectors = {};
+
+                angular.forEach(columns, function (col) {
+                    vectors[col] = _.pluck($scope.shared.filteredRows, col);
+                });
+
+                var norm;
+                switch ($scope.selectedNorm) {
+                    case 1:
+                        norm = function (arr) {
+                            arr = numeric.abs(arr);
+                            return numeric.sum(arr);
+                        }
+                        break;
+                    case 2:
+                        norm = numeric.norm2;
+                        break;
+                    case 3:
+                        norm = numeric.norminf;
+                        break;
+                }
+
+                var distances = [];
+                for (var i = 0; i < columns.length; i++) {
+                    var dist = [];
+                    for (var j = 0; j < columns.length; j++) {
+                        if (i == j) {
+                            dist.push(0);
+                        } else if (i > j) {
+                            dist.push(distances[j][i]);
+                        } else {
+                            dist.push(norm(numeric.sub(vectors[columns[i]], vectors[columns[j]])));
+                        }
+                    }
+                    distances.push(dist);
+                }
+
+                var coordinates = mds(distances);
 
                 var newSize = {
                     width: $element.width(),
@@ -43,19 +99,17 @@ app.directive('sampleplot', function() {
                     },
                     grid: {
                         borderWidth: {
-                            top: 0,
-                            right: 0,
+                            top: 1,
+                            right: 1,
                             bottom: 1,
                             left: 1
                         }
                     },
                     xaxis: {
-                        min: 0,
-                        max: 1
+                        show: false
                     },
                     yaxis: {
-                        min: 0,
-                        max: 1
+                        show: false
                     }
                 };
 
@@ -63,7 +117,7 @@ app.directive('sampleplot', function() {
 
                 var flotPlot;
                 try{
-                    flotPlot = $.plot(flotElem, [{data: [[0.15, 0.1], [0.2, 0.05], [0.1, 0.3]], color: 'red'}, {data: [[0.95, 0.9], [0.8, 0.95], [0.85, 0.8]], color: 'blue'}], flotOptions);
+                    flotPlot = $.plot(flotElem, [{data: coordinates.splice(0,3), color: 'red'}, {data: coordinates, color: 'blue'}], flotOptions);
                 } catch (err) {}
             };
 
