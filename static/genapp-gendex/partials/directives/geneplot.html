@@ -1,8 +1,10 @@
 <div>
-    <ul class="dropdown-menu" role="menu">
-        <li>Graph 1</li>
-        <li>Graph 2</li>
-    </ul>
+    <div class="btn-group-wrap">
+        <div class="btn-group">
+            <button type="button" class="btn btn-default" ng-click="selectedGraph = 1; replot();">BCV Plot</button>
+            <button type="button" class="btn btn-default" ng-click="selectedGraph = 2; replot();">FC plot using tagwise dispersion</button>
+        </div>
+    </div>
 
     <div class="flotChart plotcanvas"></div>
 </div>

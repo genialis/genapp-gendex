@@ -12,127 +12,36 @@ app.directive('geneplot', function() {
         templateUrl: '/static/genapp-gendex/partials/directives/geneplot.html',
         controller: function ($scope, $http, $element, $timeout, $compile) {  //storageRequest, notify
             console.log("inside genplot ctrl");
-//            $scope.shared.elements.volcanoplot = $element;
 
-            var volcanoModal;
-/*
-            $scope.$watchCollection('shared.differentialExpressionsDataObjects', function (dataObjs) {
-                if(!dataObjs) return;
-                if(dataObjs.length <= 0) return;
+            $scope.selectedGraph = 1;
 
-                $scope.possibleTypes = $.map(dataObjs, function (dataObj) {
-                    return {
-                        label: dataObj.static.name,
-                        val: dataObj.output.volcano_plot
-                    };
-                });
+            var flotElem = $element.find('div.flotChart');
 
-                $scope.shared.selectedDiffType = $scope.possibleTypes[0].val;
-            });
-*/
-            function getPointsData(json) {
-                //json.flot contains some flot properties, like data
-                var allPoints = $.extend({}, json.flot, {
-                    label: 'All points',
-                    clickable: true, /** all points: tooltip on click */
-                    hoverable: false,
-                    color: '#666',
-                    highlightColor: '#000',
-                    points: {
-                        fill: false,
-                        radius: 0.5,
-                        lineWidth: 2
-                    },
-                    dictIxGenes: $scope.differentialData.dictIxGenes
-                });
-
-                if(!$scope.differentialData.dictGeneIxs) return [allPoints];
-                if(!$scope.shared.selectedGenes) return [allPoints];
-
-                var selectedPoints = {
-                    label: 'Selected points',
-                    clickable: false,
-                    hoverable: true, /** selected points: tooltip on hover */
-                    highlightColor: '#124859',
-                    points: {
-                        fill: true,
-                        fillColor: '#5bc0de', /** TODO: should be bound to @brand-info */
-                        radius: 5,
-                        lineWidth: 0
-                    },
-                    data: _.map($scope.shared.selectedGenes, function (geneID) { /** $.map doesnt work correctly when returning [x,y] */
-                        var pointIx = $scope.differentialData.dictGeneIxs[geneID];
-                        return allPoints.data[pointIx];
-                    }),
-                    dictIxGenes: angular.copy($scope.shared.selectedGenes)
-                };
-
-                return [allPoints, selectedPoints];
-            }
-
-            $scope.differentialData = {
-                points: [],
-                json: {}
-            };
-
-            $scope.reload = function () {
-                $scope.refreshingData = true;
-                if(!$scope.shared.selectedDiffType) return;
-                $scope.differentialData = {
-                    points: [],
-                    json: {}
-                };
-/*
-                $scope.oldRequest = StorageRequest.get({id: $scope.shared.selectedDiffType}, function (data) {
-                    $scope.differentialData.json = data.json;
-                    $scope.differentialData.dictIxGenes = data.json.genes;
-                    $scope.differentialData.dictGeneIxs = _.invert(data.json.genes);
-
-                    $scope.replot();
-                    $scope.refreshingData = false;
-                }, function (reason) {
-                    $scope.refreshingData = false;
-
-                    if (reason.status == 401)
-                        notify({message: "You do not have permission to get storage objects for VolcanoPlot", type: 'danger'});
-                    else
-                        notify({message: "An error occured while getting storage objects for VolcanoPlot, sorry", type: 'danger'});
-                });
-*/
-            };
-/*
-            $scope.$watch('refreshingData', function (val) {
-                //getting to <window> scope...
-                $element.parent().scope().$emit( val ? 'dimOn' : 'dimOff' );
-                $element.parent().scope().$emit( val ? 'loadOn' : 'loadOff' );
-            });
-*/
             $scope.replot = function () {
-                $scope.differentialData.points = getPointsData($scope.differentialData.json);
-/*
-                var newSize = {
-                    width: $element.parent().width() - 30,
-                    height: $element.parent().height() - $element.find('.graphHead').height() -
-                            $element.parents('.windowContent').siblings('.graphHandle').height()
-                };
-*/
+                console.log('replot genplot');
+                if (!$scope.shared.filteredRows) return;
+
+                var xValues = _.pluck($scope.shared.filteredRows, 'logcpm'),
+                    yValues = _.pluck($scope.shared.filteredRows, $scope.selectedGraph == 1 ? 'fdr' : 'logfc');
+
                 var newSize = {
                     width: $element.width(),
-                    height: $element.height()
+                    height: $element.width()
                 };
 
                 var flotOptions = {
                     series: {
                         points: {
-                            show: true
+                            show: true,
+                            radius: 0.5,
+                            lineWidth: 2,
+                            fill: false
                         },
                         shadowSize: 0
                     },
                     grid: {
                         hoverable: true,
-                        autoHighlight: true,
                         clickable: true,
-                        mouseActiveRadius: 5,
                         borderWidth: {
                             top: 0,
                             right: 0,
@@ -147,12 +56,6 @@ app.directive('geneplot', function() {
                     pan: {
                         interactive: false
                     },
-                    xaxes: [{
-                        axisLabel: $scope.differentialData.json.xlabel,
-                    }],
-                    yaxes: [{
-                        axisLabel: $scope.differentialData.json.ylabel,
-                    }],
                     hooks: {
                         drawOverlay: function(flot, ctx){
                             $scope.drawSelectionRect && $scope.drawSelectionRect(flot, ctx);
@@ -160,39 +63,14 @@ app.directive('geneplot', function() {
                     }
                 };
 
-                var flotElem = $element.find('div.flotChart');
                 flotElem.css(newSize);
 
-                // draw
                 var flotPlot;
-                try {
-                    $timeout(function () { //end of transition/animation
-                        var pTime1 = performance.now();
-                        flotPlot = $.plot(flotElem, [$scope.shared.data, $scope.shared.data], flotOptions);
-                        var pTime2 = performance.now();
-                        if(pTime2 - pTime1 > 100) console.log('TODO: speed up Volcano plot draw time: ', pTime2 - pTime1, 'ms');
-                    }, 200);
-                } catch (err) {
-                    // just crying about 0 element height
-                }
+                try{
+                    flotPlot = $.plot(flotElem, [{data: _.zip(xValues, yValues), color: 'gray'}], flotOptions);
+                } catch (err) {}
             };
 
-            var oldSelectedGenes = [];
-
-            var delayedReload = _.debounce($scope.reload, 200);
-            var delayedReplot = _.debounce($scope.replot, 200);
-            var flotElem = $element.find('div.flotChart');
-/*
-            $scope.$watchCollection('shared.selectedGenes', delayedReplot);
-            $scope.$watchCollection('shared.allGenes', delayedReload);
-            $scope.$watch('shared.selectedDiffType', delayedReload);
-
-            $scope.$watch(function () { return $element.width()+','+$element.height(); }, function (v) {
-                delayedReplot();
-            });
-*/
-
-            delayedReplot();
 
             function calcBounding(rect) {
                 var x = Math.min(rect.start.x, rect.end.x);
@@ -210,21 +88,23 @@ app.directive('geneplot', function() {
                     right: ex
                 };
             }
-            /** Rectangle drag select */
+
             function rectangleSelection() {
                 flotElem.attr('unselectable', 'on').css('user-select', 'none').on('selectstart', false); // disable text selection
 
-                /** Displayed rect */
+               /** Displayed rect */
                 var rect = {
                     start: { x: 0, y: 0 },
                     end:   { x: 0, y: 0 }
                 };
+
                 flotElem.on("mousedown", function (e) {
                     flotElem.data("dragging", true);
                     flotElem.data("draggingStarted", true);
                     rect.start.x = e.offsetX;
                     rect.start.y = e.offsetY;
                 });
+
                 flotElem.on("mousemove", function (e) {
                     rect.end.x = e.offsetX;
                     rect.end.y = e.offsetY;
@@ -232,6 +112,7 @@ app.directive('geneplot', function() {
                     /** Trigger draw rect */
                     if(flotElem.data('plot')) flotElem.data('plot').triggerRedrawOverlay();
                 });
+
                 flotElem.on("mouseup", function (e) {
                     flotElem.data("dragging", false);
                     flotElem.data("findSelected", true);
@@ -256,6 +137,7 @@ app.directive('geneplot', function() {
                     start: {x: 0, y: 0},
                     end: {x: 0, y: 0}
                 };
+/*
                 flotElem.on("plothover", function (event, pos, item) {
                     if(flotElem.data("draggingStarted")){
                         flotElem.data("draggingStarted", false);
@@ -265,7 +147,7 @@ app.directive('geneplot', function() {
                     dataRect.end.x = pos.x;
                     dataRect.end.y = pos.y;
 
-                    /** Find selected */
+                    // Find selected
                     var flotPlot = flotElem.data('plot');
                     var required = ($scope.differentialData.dictIxGenes) && flotPlot;
                     if(flotElem.data("findSelected") && required){
@@ -302,116 +184,15 @@ app.directive('geneplot', function() {
                         if(!$scope.$$phase) $scope.$digest();
                     }
                 });
+*/
             }
             rectangleSelection();
 
 
-            $timeout(function(){
-                //move modal outside of positioned parent (preventing high z)
-                volcanoModal = $element.find('#volcanoSelectionModal');
-                volcanoModal.parents('.windows').append(volcanoModal);
-            }, 0);
+            $scope.$watch("shared.filteredRows", function () {
+                $scope.replot();
+            });
 
-            /** VolcanoModal grid */
-            $scope.localSelectedGenesWithinRect = [];
-            function updateGridColumnNames() {
-                $scope.gridColumns = [
-                    {field:'geneName', displayName:'Gene Name'},
-                    {field:'x', displayName: $scope.differentialData.json.xlabel},
-                    {field:'y', displayName: $scope.differentialData.json.ylabel}
-                ];
-            }
-            updateGridColumnNames();
-            $scope.$watch('differentialData.json.xlabel', updateGridColumnNames);
-            $scope.$watch('differentialData.json.ylabel', updateGridColumnNames);
-
-            $scope.gridOptions = {
-                data: 'genesInRectSelection',
-                filterOptions: {filterText: ''},
-                columnDefs: 'gridColumns',
-                multiSelect: true,
-                selectedItems: $scope.localSelectedGenesWithinRect
-            };
-
-            /** Handle selection */
-            $scope.sendSelectedGenes = function () {
-                $scope.shared.setSelectedGenes(_.pluck($scope.localSelectedGenesWithinRect, 'geneID'));
-            };
-
-            /**
-                TODO: speed up..
-                jquery.flot.axisLabels.js : 427
-                    redraws if there are any axis labels
-            */
-
-            function tooltips() {
-                var tooltipAppendTo = flotElem;
-
-                /** Tooltip for all points on click */
-                var tooltipElemAll = null;
-                var contentElemAll = null;
-                flotElem.on("plotclick", function (event, pos, item) {
-                    item = prioritizeSelectedPoints(item);
-
-                    if(!item){
-                        if(tooltipElemAll){
-                            flotDestroyTooltip(tooltipElemAll);
-                            tooltipElemAll = null;
-                        }
-                    }else{
-                        if(!tooltipElemAll){
-                            tooltipElemAll = flotCreateTooltip(tooltipAppendTo);
-                            contentElemAll = tooltipElemAll.find('.content');
-                        }
-                        var geneID = item.series.dictIxGenes[item.dataIndex];
-                        var tooltipText = $scope.shared.geneInfo[geneID]['name'];
-                        flotMoveTooltip(tooltipAppendTo, pos.pageX, pos.pageY, tooltipElemAll, contentElemAll, tooltipText);
-                    }
-                });
-
-                /** Tooltip for selected points on hover */
-                var tooltipElemSelected = null;
-                var contentElemSelected = null;
-                var hoveredItem = null;
-                var backupHoveredHighlighted = null;
-                flotElem.on("plothover", function (event, pos, item) {
-                    hoveredItem = item;
-                    if(!item){
-                        if(tooltipElemSelected){
-                            flotDestroyTooltip(tooltipElemSelected);
-                            tooltipElemSelected = null;
-                        }
-                    }else{
-                        if(!tooltipElemSelected){
-                            tooltipElemSelected = flotCreateTooltip(tooltipAppendTo);
-                            contentElemSelected = tooltipElemSelected.find('.content');
-                        }
-                        var geneID = item.series.dictIxGenes[item.dataIndex];
-                        var tooltipText = $scope.shared.geneInfo[geneID]['name'];
-                        flotMoveTooltip(tooltipAppendTo, pos.pageX, pos.pageY, tooltipElemSelected, contentElemSelected, tooltipText);
-                    }
-                });
-                /** Tooltip for selected points on click */
-                function prioritizeSelectedPoints(item) {
-                    if(backupHoveredHighlighted){
-                        flotElem.data('plot').unhighlight(backupHoveredHighlighted.seriesIndex, backupHoveredHighlighted.dataIndex);
-                    }
-                    if(hoveredItem){
-                        var replacedItem = item;
-                        setTimeout(function () {
-                            // unhighlight autohighlighted point
-                            flotElem.data('plot').unhighlight(replacedItem.seriesIndex, replacedItem.dataIndex);
-                        }, 0);
-                        backupHoveredHighlighted = hoveredItem;
-
-                        flotElem.data('plot').highlight(hoveredItem.seriesIndex, hoveredItem.dataIndex);
-                        // If there is a tooltip for selected points, give it a priority
-                        item = hoveredItem;
-                    }
-                    return item;
-                }
-            }
-            tooltips();
         }
     }
 });
