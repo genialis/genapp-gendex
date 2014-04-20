@@ -2,7 +2,8 @@ function GenDexCtrl($scope) {
 
     $scope.shared = {
         data: [],
-        filteredRows: []
+        filteredRows: [],
+        selectedGenes: []
     };
 
 }

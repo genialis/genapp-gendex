@@ -143,6 +143,10 @@ app.directive('dextable', function() {
             $scope.$watch('filterOptions.filterText', function(val) {
                 $scope.shared.filteredRows = $filter('filter')($scope.shared.data, val);
             });
+
+            $scope.$watch('shared.selectedGenes', function (row) {
+                console.log(row);
+            });
         }]
     }
 });
