@@ -137,15 +137,19 @@ app.directive('dextable', function() {
             $scope.gridOptions = {
                 data: 'shared.data',
                 filterOptions: $scope.filterOptions,
-                columnDefs: $scope.columnDefs
+                columnDefs: $scope.columnDefs,
             };
 
             $scope.$watch('filterOptions.filterText', function(val) {
                 $scope.shared.filteredRows = $filter('filter')($scope.shared.data, val);
             });
 
-            $scope.$watch('shared.selectedGenes', function (row) {
-                console.log(row);
+            $scope.$watch('shared.selectedGenes', function (rows) {
+                $scope.gridOptions.selectAll(false);
+                for (i = 0; i < rows.length; i++) {
+                    var index = $scope.shared.data.indexOf(rows[i]);
+                    $scope.gridOptions.selectItem(index, true);
+                }
             });
         }]
     }

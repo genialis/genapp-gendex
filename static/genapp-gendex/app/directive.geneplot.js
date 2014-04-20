@@ -71,11 +71,17 @@ app.directive('geneplot', function() {
                     flotPlot = $.plot(flotElem, [{data: _.zip(xValues, yValues), color: 'gray'}], flotOptions);
                 } catch (err) {}
 
-                flotElem.bind( "plotselected", function( event, ranges ) {
+                flotElem.bind("plotselected", function(event, ranges) {
                     $scope.shared.selectedGenes = _.filter($scope.shared.data, function (row) {
                         return ((ranges.xaxis.from < row[xAxis]) && (row[xAxis] < ranges.xaxis.to) &&
                                 (ranges.yaxis.from < row[yAxis]) && (row[yAxis] < ranges.yaxis.to));
                     });
+                    if (!$scope.$$phase) $scope.$apply();
+                });
+
+                flotElem.bind("plotunselected", function () {
+                    $scope.shared.selectedGenes = [];
+                    if (!$scope.$$phase) $scope.$apply();
                 });
             };
 
