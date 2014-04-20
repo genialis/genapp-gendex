@@ -5,7 +5,9 @@ var app = angular.module('gendex.widgets');
 app.directive('sampleplot', function() {
     return {
         restrict: 'A',
-        scope: {},
+        scope: {
+            shared: '='
+        },
         replace: false,
         templateUrl: '/static/genapp-gendex/partials/directives/sampleplot.html',
         controller: ['$scope', '$attrs', '$element', function ($scope, $attrs, $element) {
@@ -14,6 +16,8 @@ app.directive('sampleplot', function() {
             var flotElem = $element.find('div.flotChart');
 
             $scope.replot = function () {
+
+
                 console.log('replot sampleplot');
 
                 var lt1c = _.pluck($scope.shared.filteredRows, 'lt1c'),
