@@ -76,6 +76,7 @@ app.directive('geneplot', function() {
                         return ((ranges.xaxis.from < row[xAxis]) && (row[xAxis] < ranges.xaxis.to) &&
                                 (ranges.yaxis.from < row[yAxis]) && (row[yAxis] < ranges.yaxis.to));
                     });
+                    console.log($scope.shared.selectedGenes);
                     if (!$scope.$$phase) $scope.$apply();
                 });
 
