@@ -10,7 +10,7 @@ app.directive('dextable', function() {
         },
         replace: false,
         templateUrl: '/static/genapp-gendex/partials/directives/dextable.html',
-        controller: ['$scope', '$filter', function ($scope, $filter) {
+        controller: ['$scope', '$filter', '$element', function ($scope, $filter, $element) {
             console.log('inside dextable ctrl');
 
             $scope.shared.data = [
@@ -116,6 +116,14 @@ app.directive('dextable', function() {
                 {'logcpm': 8.84259562999, 'fdr': 0.6071799655324, 'logfc': 2.3067623233094, 'lt2c': 935, 'lt1c': 183, 'lt3c': 516, 'pvalue': 0.002804461599753, 'lt2p': 1863, 'lt1p': 4403, 'gene': 'hsa-miR-856-9p', 'lt3p': 4630}
             ];
 
+            function beforeSelection (rowItem, event) {
+                if (event.type == "click") {
+                    $scope.shared.selectedRow = rowItem;
+                    return false;
+                }
+                return true;
+            }
+
             $scope.filterOptions = {
                 filterText: ''
             };
@@ -138,6 +146,8 @@ app.directive('dextable', function() {
                 data: 'shared.data',
                 filterOptions: $scope.filterOptions,
                 columnDefs: $scope.columnDefs,
+                selectedItems: [],
+                beforeSelectionChange: beforeSelection
             };
 
             $scope.$watch('filterOptions.filterText', function(val) {
