@@ -98,6 +98,8 @@ app.directive('sampleplot', function() {
                         shadowSize: 0
                     },
                     grid: {
+                        hoverable: true,
+                        clickable: true,
                         borderWidth: {
                             top: 1,
                             right: 1,
@@ -120,6 +122,19 @@ app.directive('sampleplot', function() {
                     flotPlot = $.plot(flotElem, [{data: coordinates.splice(0,3), color: 'red'}, {data: coordinates, color: 'blue'}], flotOptions);
                 } catch (err) {}
             };
+
+            tooltipElem = $element.find('div.tooltip');
+            flotElem.bind("plothover", function (event, pos, item) {
+                if (item) {
+                    var x = pos.pageX - $element.position().left,
+                        y = pos.pageY - $element.position().top;
+                    tooltipElem.html("FOO");
+                    tooltipElem.css({top: y-20, left: x});
+                    tooltipElem.fadeIn(200);
+                } else {
+                    tooltipElem.hide();
+                }
+            });
 
             $scope.$watch("shared.filteredRows", function () {
                 $scope.replot();
