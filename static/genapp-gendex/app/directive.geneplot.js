@@ -1,4 +1,4 @@
-'use sctrict';
+'use strict';
 
 var app = angular.module('gendex.widgets');
 
@@ -17,7 +17,7 @@ app.directive('geneplot', function() {
 
             var flotElem = $element.find('div.flotChart');
 
-            var xAxis, zAxis, xValues, yValues;
+            var xAxis, yAxis, xValues, yValues;
 
             $scope.replot = function () {
                 console.log('replot genplot');
@@ -87,7 +87,7 @@ app.directive('geneplot', function() {
                 if (!$scope.$$phase) $scope.$apply();
             });
 
-            tooltipElem = $element.find('div.tooltip');
+            var tooltipElem = $element.find('div.tooltip');
             flotElem.bind("plothover", function (event, pos, item) {
                 if (item) {
 

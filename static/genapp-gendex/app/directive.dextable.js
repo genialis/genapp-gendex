@@ -1,4 +1,4 @@
-'use sctrict';
+'use strict';
 
 var app = angular.module('gendex.widgets');
 
@@ -156,7 +156,7 @@ app.directive('dextable', function() {
 
             $scope.$watch('shared.selectedGenes', function (rows) {
                 $scope.gridOptions.selectAll(false);
-                for (i = 0; i < rows.length; i++) {
+                for (var i = 0; i < rows.length; i++) {
                     var index = $scope.shared.data.indexOf(rows[i]);
                     $scope.gridOptions.selectItem(index, true);
                 }

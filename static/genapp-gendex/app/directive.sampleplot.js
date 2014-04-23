@@ -1,4 +1,4 @@
-'use sctrict';
+'use strict';
 
 var app = angular.module('gendex.widgets');
 
@@ -123,7 +123,7 @@ app.directive('sampleplot', function() {
                 } catch (err) {}
             };
 
-            tooltipElem = $element.find('div.tooltip');
+            var tooltipElem = $element.find('div.tooltip');
             flotElem.bind("plothover", function (event, pos, item) {
                 if (item) {
                     var x = pos.pageX - $element.position().left,
