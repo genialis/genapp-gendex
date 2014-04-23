@@ -90,17 +90,9 @@ app.directive('geneplot', function() {
             var tooltipElem = $element.find('div.tooltip');
             flotElem.bind("plothover", function (event, pos, item) {
                 if (item) {
-
-                    var text = _.find($scope.shared.filteredRows, function (row) {
-                        if ((row[xAxis] == item.datapoint[0]) && (row[yAxis] == item.datapoint[1])) {
-                            return true;
-                        }
-                        return false;
-                    });
-
                     var x = pos.pageX - $element.position().left,
                         y = pos.pageY - $element.position().top;
-                    tooltipElem.html(text.gene);
+                    tooltipElem.html($scope.shared.filteredRows[item.dataIndex]['gene']);
                     tooltipElem.css({top: y-20, left: x});
                     tooltipElem.fadeIn(200);
                 } else {
