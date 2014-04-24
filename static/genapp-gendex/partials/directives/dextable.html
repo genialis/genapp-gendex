@@ -1,0 +1,12 @@
+<div>
+    <div class="input-group">
+        <span class="input-group-addon">Search:</span>
+        <input type="text" class="form-control" ng-model="filterOptions.filterText">
+        <div class="input-group-btn">
+            <button type="button" class="btn btn-default">Import</button>
+            <button type="button" class="btn btn-default">Export</button>
+        </div>
+    </div>
+
+    <div class="scrollable-table dextable" ng-grid="gridOptions"></div>
+</div>
