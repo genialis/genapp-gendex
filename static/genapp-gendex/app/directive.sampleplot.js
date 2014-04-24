@@ -126,9 +126,25 @@ app.directive('sampleplot', function() {
             var tooltipElem = $element.find('div.tooltip');
             flotElem.bind("plothover", function (event, pos, item) {
                 if (item) {
+
+                    var text;
+                    if (item.seriesIndex == 0) {
+                        switch (item.dataIndex) {
+                            case 0: text = "LT1C"; break;
+                            case 1: text = "LT2C"; break;
+                            case 2: text = "LT3C"; break;
+                        }
+                    } else {
+                        switch (item.dataIndex) {
+                            case 0: text = "LT1P"; break;
+                            case 1: text = "LT2P"; break;
+                            case 2: text = "LT3P"; break;
+                        }
+                    }
+
                     var x = pos.pageX - $element.position().left,
                         y = pos.pageY - $element.position().top;
-                    tooltipElem.html("FOO");
+                    tooltipElem.html(text);
                     tooltipElem.css({top: y-20, left: x});
                     tooltipElem.fadeIn(200);
                 } else {
