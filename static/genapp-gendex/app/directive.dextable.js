@@ -16,6 +16,7 @@ app.directive('dextable', function () {
             $scope.data = {};
             $scope.gridVisible = false;
             $scope.fieldsValuesCount = 0;
+            $scope.filterFields = {}
             console.log('inside dextable ctrl');
 
             // get JSON data
@@ -55,7 +56,8 @@ app.directive('dextable', function () {
             }
 
             $scope.filterOptions = {
-                filterText: ''
+                filterText: '',
+                useExternalFilter: true
             };
 
             // when upgrading to AngularJS 1.3, replace $watchCollection with $watchGroup
@@ -110,7 +112,7 @@ app.directive('dextable', function () {
             });
 
             // set ng-grid options
-            $scope.$watch('shared.filteredRows', function (data) {
+            $scope.$watchCollection('shared.filteredRows', function (data) {
                 $scope.gridOptions.data = 'shared.filteredRows';
                 $scope.gridOptions.filterOptions = $scope.filterOptions;
                 $scope.gridOptions.selectedItems = [];
@@ -124,33 +126,37 @@ app.directive('dextable', function () {
             });
 
             $scope.$watch('filterOptions.filterText', function (val) {
-                // TODO: Study and modify existing filterByFieldText() OR write your own.
-                // $scope.shared.filteredRows = filterByFieldText($scope.shared.data, val, false, true);
+                // think of a better watch
                 if (typeof $scope.colFields !== 'undefined') {
-                    // var colFields = $scope.colFields;
-                    // console.log(colFields.length);
-                    // var filterFields = {};
-                    // for (var i = 0; i < colFields.length; i++) {
-                    //     filterFields[colFields[i]] = '';
-                    // }
-                    // console.log(filterFields);
-                    // filterFields['lt1c'] = val;
-
-                    // TODO postavi <nekaj>: filter, odrežeš pri zadnjem :
-
-
 
                     if (val === '') $scope.shared.filteredRows = $scope.shared.data;
                     else {
-                        var filterFields = {'lt1c': val, 'lt2c': val};
+                        var vals = val.split(/[\s]+/g);
+                        console.log(vals);
+                        _.forEach(vals, function(val) {
+                            if (_.contains(val, ':')) {
+                                var key = val.slice(0, val.indexOf(':'));
+                                var value = val.slice(val.indexOf(':') + 1, val.length + 1);
+                                console.log('key: ' + key + '  , value: ' + value);
+                                var colFields = $scope.colFields;
+                                for (var i = 0; i < colFields.length; i++) {
+                                    if (_.contains(colFields[i], key)) $scope.filterFields[colFields[i]] = value;
+                                }
+                            }
+                        })
+
+                        // TODO: "0 0 0 0" filtering (substrings without arguments, ex: "0 0" => "lt1c lt2c")
+                        // TODO: Comparators from services.js
+
+                        var filterFields = $scope.filterFields;
                         console.log(filterFields);
                         $scope.shared.filteredRows = $filter('filter')($scope.shared.data, filterFields, function(actual, expected) {
-                            // console.log(expected + '  '  + actual);
-                            return (expected.length <= actual.length && expected.indexOf(actual) > -1);
+                            // console.log('exp: ' + expected + ' , act: '  + actual);
+                            // return (expected.length <= actual.length && actual.indexOf(expected) > -1);
+                            return _.contains(actual, expected);
                         });
-                        console.log($scope.shared.filteredRows);
-                        // $scope.shared.data = $scope.shared.filteredRows;
-                        // $scope.$digest();
+                        // reset predicate
+                        $scope.filterFields = {};
                     }
                 }
             });
