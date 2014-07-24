@@ -10,13 +10,13 @@ app.directive('dextable', function () {
         },
         replace: false,
         templateUrl: '/static/genapp-gendex/partials/directives/dextable.html',
-        controller: ['$scope', '$filter', '$element', '$location', '$http', 'filterByFieldText', 'Data',
-        function ($scope, $filter, $element, $location, $http, filterByFieldText, Data) {
+        controller: ['$scope', '$filter', '$element', '$location', '$http', 'Data',
+        function ($scope, $filter, $element, $location, $http, Data) {
             $scope.gridOptions = {};
             $scope.data = {};
             $scope.gridVisible = false;
             $scope.fieldsValuesCount = 0;
-            $scope.filterFields = {}
+            $scope.filterFields = {};
             console.log('inside dextable ctrl');
 
             // get JSON data
@@ -24,9 +24,9 @@ app.directive('dextable', function () {
                 // TODO, each object separately
                 // retrieve tab-delimited file address with api v1
                 // chosen data object is just a test case for filling the table
-                var jsonData = jsonData.objects[0];
+                var jsonData = jsonData.objects[0],
                 // request tab-delimited file
-                var tabUrl = [$location.protocol(), '://', $location.host(),
+                    tabUrl = [$location.protocol(), '://', $location.host(),
                               ':', $location.port(), jsonData.resource_uri, 'download/',
                               jsonData.output.diffexp.file].join('');
 
@@ -65,20 +65,24 @@ app.directive('dextable', function () {
             $scope.$watch('realColCount', function (count) {
                 if (typeof count !== 'undefined') {
                     // build column definitions
-                    var columnDefs = []
-                    var ltcc = 1;
-                    var ltpc = 1;
-                    var tabHeader = $scope.tabHeader;
+                    var columnDefs = [],
+                        ltcc = 1,
+                        ltpc = 1,
+                        tabHeader = $scope.tabHeader;
 
                     for (var i = 0; i < count; i++) {
                         var val = tabHeader[i];
                         // case-control columns
                         if (val.indexOf('Counts') > -1) {
-                            var field = (val.indexOf('Case') > -1 ? ['lt', ltcc++, 'c'] : ['lt', ltpc++, 'p']).join('');
+                            var field = (val.indexOf('Case') > -1 ? ['lt', ltcc++, 'c'] : ['lt', ltpc++, 'p'])
+                                        .join('')
+                                        .toLowerCase();
                             columnDefs.push({field: field, displayName: field.toUpperCase(), width: '*'});
                         }
                         // the rest
-                        else columnDefs.push({field: val, displayName: val, width: '**'});
+                        else {
+                            columnDefs.push({field: val.toLowerCase(), displayName: val, width: '**'});
+                        }
                     }
 
                     var colFields = [];
@@ -125,35 +129,71 @@ app.directive('dextable', function () {
                 $scope.gridVisible = true;
             });
 
-            $scope.$watch('filterOptions.filterText', function (val) {
-                // think of a better watch
-                if (typeof $scope.colFields !== 'undefined') {
+            function strToNumIfNum(str) {
+                return !isNaN(str) ? (+str) : str;
+            }
 
-                    if (val === '') $scope.shared.filteredRows = $scope.shared.data;
+            $scope.cmpFunctions = {
+                ':<=': function (str, value) {
+                    return strToNumIfNum(str) <= strToNumIfNum(value);
+                },
+                ':>=': function (str, value) {
+                    return strToNumIfNum(str) >= strToNumIfNum(value);
+                },
+                ':<': function (str, value) {
+                    return strToNumIfNum(str) < strToNumIfNum(value);
+                },
+                ':>': function (str, value) {
+                    return strToNumIfNum(str) > strToNumIfNum(value);
+                },
+                ':=': function (str, value) {
+                    return _.isEqual(str, value);
+                },
+                ':': function (str, value) {
+                    return _.contains(str, value);
+                }
+            };
+
+            
+            $scope.$watch('filterOptions.filterText', function (val) {
+                if (typeof $scope.colFields !== 'undefined') {
+                    // search text filter
+                    // TODO: substring filtering without arguments, ex: "0 0" => "lt1c lt2c")
+                    var filterFields = {},
+                        val = val.toLowerCase();
+                    if (_.isEqual(val, '')) $scope.shared.filteredRows = $scope.shared.data;
                     else {
                         var vals = val.split(/[\s]+/g);
-                        console.log(vals);
-                        _.forEach(vals, function(val) {
-                            if (_.contains(val, ':')) {
-                                var key = val.slice(0, val.indexOf(':'));
-                                var value = val.slice(val.indexOf(':') + 1, val.length + 1);
-                                console.log('key: ' + key + '  , value: ' + value);
-                                var colFields = $scope.colFields;
-                                for (var i = 0; i < colFields.length; i++) {
-                                    if (_.contains(colFields[i], key)) $scope.filterFields[colFields[i]] = value;
+                        $scope.searchArgs = vals;
+                        var testFun = $scope.cmpFunctions;                   
+                        var comps = Object.keys(testFun);
+                        // space separated vals
+                        for (i in vals) {
+                            var val = vals[i];
+                            // comparator separated vals
+                            for (var i=0; i < comps.length; i++) {
+                                if (_.contains(val, comps[i])) {
+                                    var keyval = val.split(comps[i]);
+                                    // set a filter function
+                                    $scope.filterFunction = testFun[comps[i]];
+                                    var colFields = $scope.colFields;
+                                    for (var j = 0; j < colFields.length; j++) {
+                                        if (_.contains(colFields[j], keyval[0])) {
+                                            $scope.filterFields[colFields[j]] = [keyval[1], comps[i]];
+                                        }
+                                    }
+                                    break;
                                 }
                             }
-                        })
+                        }
 
-                        // TODO: "0 0 0 0" filtering (substrings without arguments, ex: "0 0" => "lt1c lt2c")
-                        // TODO: Comparators from services.js
-
-                        var filterFields = $scope.filterFields;
-                        console.log(filterFields);
-                        $scope.shared.filteredRows = $filter('filter')($scope.shared.data, filterFields, function(actual, expected) {
-                            // console.log('exp: ' + expected + ' , act: '  + actual);
-                            // return (expected.length <= actual.length && actual.indexOf(expected) > -1);
-                            return _.contains(actual, expected);
+                        // filter shared.data
+                        $scope.shared.filteredRows = $filter('filter')($scope.shared.data, function(row) {
+                            return _.every(row, function(val, key) {
+                                var fFields = $scope.filterFields;
+                                return _.has(fFields, key) ?
+                                       $scope.cmpFunctions[fFields[key][1]](val, fFields[key][0]) : true;
+                            });
                         });
                         // reset predicate
                         $scope.filterFields = {};

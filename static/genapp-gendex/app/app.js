@@ -2,7 +2,7 @@
 
 
 
-var gendex = angular.module('gendex', ['gendex.filters', 'gendex.services', 'gendex.widgets', 'ngRoute', 'ngGrid']);
+var gendex = angular.module('gendex', ['gendex.services', 'gendex.widgets', 'ngRoute', 'ngGrid']);
 
 gendex.config(['$routeProvider', function ($routeProvider) {
     $routeProvider.otherwise({
