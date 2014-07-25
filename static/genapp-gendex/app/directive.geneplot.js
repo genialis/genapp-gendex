@@ -1,8 +1,7 @@
 'use strict';
 
-var app = angular.module('gendex.widgets');
-
-app.directive('geneplot', function() {
+angular.module('gendex.widgets')
+.directive('geneplot', function() {
     return {
         restrict: 'A',
         scope: {
@@ -10,7 +9,7 @@ app.directive('geneplot', function() {
         },
         replace: false,
         templateUrl: '/static/genapp-gendex/partials/directives/geneplot.html',
-        controller: function ($scope, $http, $element, $timeout, $compile) {  //storageRequest, notify
+        controller: ['$scope', '$http', '$element', '$timeout', '$compile', function ($scope, $http, $element, $timeout, $compile) {  //storageRequest, notify
             // console.log("inside genplot ctrl");
 
             $scope.selectedGraph = 1;
@@ -104,6 +103,6 @@ app.directive('geneplot', function() {
                 $scope.replot();
             });
 
-        }
-    }
+        }]
+    };
 });
