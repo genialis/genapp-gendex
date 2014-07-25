@@ -63,7 +63,7 @@ angular.module('gendex.widgets')
                         var tH = tabHeader[i].toLowerCase();
                         // case-control columns
                         if (_.contains(tH, 'counts')) {
-                            var field = (_.contains(tH, 'case') ? ['lt', ltcc++, 'c'] : ['lt', ltpc++, 'p']);
+                            var field = _.contains(tH, 'case') ? ['lt', ltcc++, 'c'] : ['lt', ltpc++, 'p'];
                             field = field.join('');
 
                             columnDefs.push({field: field, displayName: field.toUpperCase(), width: '*'});
