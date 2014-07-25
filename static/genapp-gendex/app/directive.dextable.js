@@ -1,8 +1,7 @@
 'use strict';
 
-var app = angular.module('gendex.widgets');
-
-app.directive('dextable', function () {
+angular.module('gendex.widgets')
+.directive('dextable', function () {
     return {
         restrict: 'A',
         scope: {
@@ -30,8 +29,8 @@ app.directive('dextable', function () {
             Data.get({'id': $routeParams.id}, function (caseData) {
                 if (_.contains(caseData.type, 'differentialexpression') && _.contains(caseData.status, 'done')) {
                     // request tab-delimited file
-                    Data.download({'id': $routeParams.id, 'file': caseData.output.diffexp.file}, function (data) {
-                        var data = data.data;
+                    Data.download({'id': $routeParams.id, 'file': caseData.output.diffexp.file}, function (raw) {
+                        var data = raw.data;
                         // tab header
                         $scope.tabHeader = data.slice(0, data.indexOf('\n')).replace(/\./g, '_').split(/[\t]/);
                         // data
@@ -64,8 +63,9 @@ app.directive('dextable', function () {
                         var tH = tabHeader[i].toLowerCase();
                         // case-control columns
                         if (_.contains(tH, 'counts')) {
-                            var field = (_.contains(tH, 'case') ? ['lt', ltcc++, 'c'] : ['lt', ltpc++, 'p'])
-                                        .join('')
+                            var field = _.contains(tH, 'case') ? ['lt', ltcc++, 'c'] : ['lt', ltpc++, 'p'];
+                            field = field.join('');
+
                             columnDefs.push({field: field, displayName: field.toUpperCase(), width: '*'});
                         }
                         // the rest: {fdr.de, lik.nde} (manual pick for now)
@@ -143,5 +143,5 @@ app.directive('dextable', function () {
                 }
             });
         }]
-    }
+    };
 });

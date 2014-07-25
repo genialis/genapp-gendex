@@ -1,8 +1,7 @@
 'use strict';
 
-var app = angular.module('gendex.widgets');
-
-app.directive('sampleplot', function() {
+angular.module('gendex.widgets')
+.directive('sampleplot', function() {
     return {
         restrict: 'A',
         scope: {
@@ -38,7 +37,7 @@ app.directive('sampleplot', function() {
                 return ret.U.map(function(row) {
                     return numeric.mul(row, eigenValues).splice(0, dimensions);
                 });
-            };
+            }
 
             $scope.replot = function () {
                 // console.log('replot sampleplot');
@@ -56,7 +55,7 @@ app.directive('sampleplot', function() {
                         norm = function (arr) {
                             arr = numeric.abs(arr);
                             return numeric.sum(arr);
-                        }
+                        };
                         break;
                     case 2:
                         norm = numeric.norm2;
@@ -156,5 +155,5 @@ app.directive('sampleplot', function() {
                 $scope.replot();
             });
         }]
-    }
+    };
 });
