@@ -11,7 +11,7 @@ app.directive('sampleplot', function() {
         replace: false,
         templateUrl: '/static/genapp-gendex/partials/directives/sampleplot.html',
         controller: ['$scope', '$attrs', '$element', function ($scope, $attrs, $element) {
-            console.log('inside sampleplot ctrl');
+            // console.log('inside sampleplot ctrl');
 
             var flotElem = $element.find('div.flotChart');
 
@@ -41,7 +41,7 @@ app.directive('sampleplot', function() {
             };
 
             $scope.replot = function () {
-                console.log('replot sampleplot');
+                // console.log('replot sampleplot');
 
                 var columns = ['lt1c', 'lt2c', 'lt3c', 'lt1p', 'lt2p', 'lt3p'],
                     vectors = {};

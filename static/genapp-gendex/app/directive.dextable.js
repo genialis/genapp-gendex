@@ -10,59 +10,49 @@ app.directive('dextable', function () {
         },
         replace: false,
         templateUrl: '/static/genapp-gendex/partials/directives/dextable.html',
-        controller: ['$scope', '$filter', '$element', '$location', '$http', 'Data',
-        function ($scope, $filter, $element, $location, $http, Data) {
+        controller: ['$scope', 'filterByFieldText', 'notify', 'Data', '$routeParams',
+        function ($scope, filterByFieldText, notify, Data, $routeParams) {
             $scope.gridOptions = {};
             $scope.data = {};
             $scope.gridVisible = false;
             $scope.fieldsValuesCount = 0;
-            $scope.filterFields = {};
-            console.log('inside dextable ctrl');
+            // console.log('inside dextable ctrl');
 
-            // get JSON data
-            Data.get({'processor_name__contains': 'differentialexpression'}, function (jsonData) {  
-                // TODO, each object separately
-                // retrieve tab-delimited file address with api v1
-                // chosen data object is just a test case for filling the table
-                var jsonData = jsonData.objects[0],
-                // request tab-delimited file
-                    tabUrl = [$location.protocol(), '://', $location.host(),
-                              ':', $location.port(), jsonData.resource_uri, 'download/',
-                              jsonData.output.diffexp.file].join('');
+            function initErrorNotify (msg, error) {
+                $scope.errorMsg = msg;
+                $scope.$on('notifyReady', function (error) {
+                    notify.error($scope.errorMsg)(error);
+                });
+                $scope.gridVisible = false;
+            }
 
-                $http.get(tabUrl)
-                    .success(function (data) {
+            // request JSON data
+            Data.get({'id': $routeParams.id}, function (caseData) {
+                if (_.contains(caseData.type, 'differentialexpression') && _.contains(caseData.status, 'done')) {
+                    // request tab-delimited file
+                    Data.download({'id': $routeParams.id, 'file': caseData.output.diffexp.file}, function (data) {
+                        var data = data.data;
                         // tab header
-                        $scope.tabHeader = data.slice(0, data.indexOf('\n')).replace(/\./g, '_').split(/[\t]+/);
+                        $scope.tabHeader = data.slice(0, data.indexOf('\n')).replace(/\./g, '_').split(/[\t]/);
                         // data
                         var vals = data.slice(data.indexOf('\n') + 1, data.length + 1).split(/[\n]+/);
                         $scope.data.values = vals;
-                        // real length test
-                        if (typeof vals[0] !== 'undefined') $scope.realColCount = vals[0].split(/[\t]+/).length;
-                        else $scope.realColCount = 0;
+                        // nr. of columns test
+                        if (typeof vals[0] !== 'undefined') $scope.colCount = $scope.tabHeader.length;
+                        // objective trigger
                         $scope.fieldsValuesCount = $scope.fieldsValuesCount + 1;
-                    })
-                    .error(function (data, status) {
-                        console.log(status);
-                });
-            });
-
-            function beforeSelection (rowItem, event) {
-                if (event.type == 'click') {
-                    $scope.shared.selectedRow = rowItem;
-                    return false;
+                    }, function (error) {
+                        initErrorNotify('failed tab file request', error);
+                    });
                 }
-                return true;
-            }
-
-            $scope.filterOptions = {
-                filterText: '',
-                useExternalFilter: true
-            };
+                else initErrorNotify('wrong case id request', 'error');
+            }, function (error) {
+                initErrorNotify('failed JSON file request via api', error);
+            });
 
             // when upgrading to AngularJS 1.3, replace $watchCollection with $watchGroup
             // wait for both case and control column counts, build column definitions
-            $scope.$watch('realColCount', function (count) {
+            $scope.$watch('colCount', function (count) {
                 if (typeof count !== 'undefined') {
                     // build column definitions
                     var columnDefs = [],
@@ -71,42 +61,37 @@ app.directive('dextable', function () {
                         tabHeader = $scope.tabHeader;
 
                     for (var i = 0; i < count; i++) {
-                        var val = tabHeader[i];
+                        var tH = tabHeader[i].toLowerCase();
                         // case-control columns
-                        if (val.indexOf('Counts') > -1) {
-                            var field = (val.indexOf('Case') > -1 ? ['lt', ltcc++, 'c'] : ['lt', ltpc++, 'p'])
+                        if (_.contains(tH, 'counts')) {
+                            var field = (_.contains(tH, 'case') ? ['lt', ltcc++, 'c'] : ['lt', ltpc++, 'p'])
                                         .join('')
-                                        .toLowerCase();
                             columnDefs.push({field: field, displayName: field.toUpperCase(), width: '*'});
                         }
-                        // the rest
-                        else {
-                            columnDefs.push({field: val.toLowerCase(), displayName: val, width: '**'});
+                        // the rest: {fdr.de, lik.nde} (manual pick for now)
+                        else if (_.indexOf(['gene', 'fdr_de', 'lik_nde'], tH) > -1) {
+                            columnDefs.push({field: tH, displayName: tH.toUpperCase(), width: '**'});
                         }
-                    }
-
-                    var colFields = [];
-                    for (var i = 0; i < columnDefs.length; i++) {
-                        colFields.push(columnDefs[i].field);
                     }
                     // push data to scope
                     $scope.columnDefs = columnDefs;
-                    $scope.colFields = colFields;
+                    // objective trigger
                     $scope.fieldsValuesCount = $scope.fieldsValuesCount + 1;
                 }
             });
 
-            // wait for displayNames array and tab values array
+            // trigger when both objective triggers
             $scope.$watch('fieldsValuesCount', function (val) {
+                // construct table and populate ng-grid
                 if (val == 2) {
-                    var line = null;
-                    var newline = null;
-                    var grid = [];
+                    var line = null,
+                        newline = null,
+                        grid = [];
                     for (var i = 0; i < $scope.data.values.length; i++) {
-                        line = $scope.data.values[i].split(/[\t]+/);
+                        line = $scope.data.values[i].split(/[\t]/);
                         newline = {};
-                        for (var j = 0; j < $scope.colFields.length; j++) {
-                            newline[$scope.colFields[j]] = line[j];
+                        for (var j = 0; j < $scope.columnDefs.length; j++) {
+                            newline[$scope.columnDefs[j].field] = line[j];
                         }
                         grid.push(newline);
                     }
@@ -128,76 +113,23 @@ app.directive('dextable', function () {
             $scope.$watch('gridOptions', function (grid) {
                 $scope.gridVisible = true;
             });
-
-            function strToNumIfNum(str) {
-                return !isNaN(str) ? (+str) : str;
+            
+            function beforeSelection (rowItem, event) {
+                if (event.type == 'click') {
+                    $scope.shared.selectedRow = rowItem;
+                    return false;
+                }
+                return true;
             }
 
-            $scope.cmpFunctions = {
-                ':<=': function (str, value) {
-                    return strToNumIfNum(str) <= strToNumIfNum(value);
-                },
-                ':>=': function (str, value) {
-                    return strToNumIfNum(str) >= strToNumIfNum(value);
-                },
-                ':<': function (str, value) {
-                    return strToNumIfNum(str) < strToNumIfNum(value);
-                },
-                ':>': function (str, value) {
-                    return strToNumIfNum(str) > strToNumIfNum(value);
-                },
-                ':=': function (str, value) {
-                    return _.isEqual(str, value);
-                },
-                ':': function (str, value) {
-                    return _.contains(str, value);
-                }
+            $scope.filterOptions = {
+                filterText: '',
+                useExternalFilter: true
             };
 
-            
             $scope.$watch('filterOptions.filterText', function (val) {
-                if (typeof $scope.colFields !== 'undefined') {
-                    // search text filter
-                    // TODO: substring filtering without arguments, ex: "0 0" => "lt1c lt2c")
-                    var filterFields = {},
-                        val = val.toLowerCase();
-                    if (_.isEqual(val, '')) $scope.shared.filteredRows = $scope.shared.data;
-                    else {
-                        var vals = val.split(/[\s]+/g);
-                        $scope.searchArgs = vals;
-                        var testFun = $scope.cmpFunctions;                   
-                        var comps = Object.keys(testFun);
-                        // space separated vals
-                        for (i in vals) {
-                            var val = vals[i];
-                            // comparator separated vals
-                            for (var i=0; i < comps.length; i++) {
-                                if (_.contains(val, comps[i])) {
-                                    var keyval = val.split(comps[i]);
-                                    // set a filter function
-                                    $scope.filterFunction = testFun[comps[i]];
-                                    var colFields = $scope.colFields;
-                                    for (var j = 0; j < colFields.length; j++) {
-                                        if (_.contains(colFields[j], keyval[0])) {
-                                            $scope.filterFields[colFields[j]] = [keyval[1], comps[i]];
-                                        }
-                                    }
-                                    break;
-                                }
-                            }
-                        }
-
-                        // filter shared.data
-                        $scope.shared.filteredRows = $filter('filter')($scope.shared.data, function(row) {
-                            return _.every(row, function(val, key) {
-                                var fFields = $scope.filterFields;
-                                return _.has(fFields, key) ?
-                                       $scope.cmpFunctions[fFields[key][1]](val, fFields[key][0]) : true;
-                            });
-                        });
-                        // reset predicate
-                        $scope.filterFields = {};
-                    }
+                if (typeof $scope.shared.filteredRows !== 'undefined') {
+                    $scope.shared.filteredRows = filterByFieldText($scope.shared.data, val, true, true);
                 }
             });
 
