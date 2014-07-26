@@ -40,7 +40,7 @@ angular.module('gendex.widgets')
                     }
                 }
 
-                var ret = numeric.svd(M),
+                var ret = numeric.svd(M), //TODO: this is throwing "Error: no convergence."
                     eigenValues = numeric.sqrt(ret.S);
                 return ret.U.map(function(row) {
                     return numeric.mul(row, eigenValues).splice(0, dimensions);
