@@ -10,5 +10,6 @@
   ],
   "dependencies": {
     "flot": "~0.8.1",
+    "numericjs": "~1.2.6"
   }
 }
