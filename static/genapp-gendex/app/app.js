@@ -3,7 +3,7 @@
 angular.module('gendex', ['genjs.filters', 'genjs.services', 'gendex.controllers', 'gendex.widgets', 'ngRoute', 'ngGrid'])
 .config(['$routeProvider', function ($routeProvider) {
     $routeProvider
-    	.when('/case/:id', {
+    	.when('/data/:id', {
 			templateUrl: '/static/genapp-gendex/partials/gendex.html',
 			controller: 'GenDexCtrl'
 		})
