@@ -20,7 +20,6 @@ angular.module('gendex.widgets')
             var replace = _.curry(function (from, to, str) {
                 return str.replace(from, to);
             });
-            var zipObject = _.curry(_.zipObject, 2);
 
             function parseData(data) {
                 var lines = data.split(/\n+/);
@@ -28,27 +27,34 @@ angular.module('gendex.widgets')
 
                 var tabHeader = _.map(table[0], replace(/\./g, '_'));
 
-                var keptHeader = _.filter(tabHeader, function (col) {
+                var keepMask = _.map(tabHeader, function (col) {
                     var lowCol = col.toLowerCase();
                     return /counts/i.test(lowCol) || _.indexOf(['gene', 'fdr_de', 'lik_nde'], lowCol) >= 0;
+                });
+                var keptHeader = _.filter(tabHeader, function (col, ix) {
+                    return keepMask[ix];
                 });
 
                 var ret = {};
                 var ltcc = 1;
                 var ltpc = 1;
-                return {
-                    cols: _.map(keptHeader, function (col) {
-                        var ret = {field: col, displayName: col, width: '**'};
+                ret.cols = _.map(keptHeader, function (col) {
+                    var ret = {field: col, displayName: col, width: '**'};
 
-                        if (/counts/i.test(col)) {
-                            var newColName = /case/i.test(col) ? ['lt', ltcc++, 'c'] : ['lt', ltpc++, 'p'];
-                            ret.displayName = newColName.join('').toUpperCase();
-                            ret.width = '*';
-                        }
-                        return ret;
-                    }),
-                    rows: _.map(table.slice(1), zipObject(keptHeader))
-                };
+                    if (/counts/i.test(col)) {
+                        var newColName = /case/i.test(col) ? ['lt', ltcc++, 'c'] : ['lt', ltpc++, 'p'];
+                        newColName = newColName.join('');
+                        ret = {field: newColName, displayName: newColName.toUpperCase(), width: '*'};
+                    }
+                    return ret;
+                });
+                var newFields = _.map(ret.cols, 'field');
+                ret.rows = _.map(table.slice(1), function (row) {
+                    return _.zipObject(newFields, _.filter(row, function (col, ix) {
+                        return keepMask[ix];
+                    }));
+                });
+                return ret;
             }
 
             // request JSON data
