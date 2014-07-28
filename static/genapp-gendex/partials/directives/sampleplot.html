@@ -1,9 +1,12 @@
 <div>
     <div class="btn-group-wrap">
         <div class="btn-group">
-            <button type="button" class="btn btn-default" ng-click="selectedNorm = 1; replot();">Manhattan</button>
-            <button type="button" class="btn btn-default" ng-click="selectedNorm = 2; replot();">Euclidean</button>
-            <button type="button" class="btn btn-default" ng-click="selectedNorm = 3; replot();">Maximum</button>
+            <button type="button" class="btn btn-default"
+                ng-repeat="n in norms.all"
+                ng-click="norms.selected = n; replot();"
+                ng-class="{active: norms.selected == n}">
+                {{ n.name }}
+            </button>
         </div>
     </div>
 

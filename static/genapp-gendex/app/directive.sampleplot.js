@@ -1,8 +1,7 @@
 'use strict';
 
-var app = angular.module('gendex.widgets');
-
-app.directive('sampleplot', function() {
+angular.module('gendex.widgets')
+.directive('sampleplot', function() {
     return {
         restrict: 'A',
         scope: {
@@ -11,11 +10,19 @@ app.directive('sampleplot', function() {
         replace: false,
         templateUrl: '/static/genapp-gendex/partials/directives/sampleplot.html',
         controller: ['$scope', '$attrs', '$element', function ($scope, $attrs, $element) {
-            console.log('inside sampleplot ctrl');
+            // console.log('inside sampleplot ctrl');
 
             var flotElem = $element.find('div.flotChart');
 
-            $scope.selectedNorm = 2;
+            $scope.norms = {
+                all: [
+                    { name: 'Manhattan', norm: _.compose(numeric.sum, numeric.abs) },
+                    { name: 'Euclidean', norm: numeric.norm2   },
+                    { name: 'Maximum',   norm: numeric.norminf }
+                ],
+                selected: null
+            };
+            $scope.norms.selected = $scope.norms.all[1];
 
             function mds(distances, dimensions) {
                 dimensions = dimensions || 2;
@@ -33,15 +40,15 @@ app.directive('sampleplot', function() {
                     }
                 }
 
-                var ret = numeric.svd(M),
+                var ret = numeric.svd(M), //TODO: this is throwing "Error: no convergence."
                     eigenValues = numeric.sqrt(ret.S);
                 return ret.U.map(function(row) {
                     return numeric.mul(row, eigenValues).splice(0, dimensions);
                 });
-            };
+            }
 
             $scope.replot = function () {
-                console.log('replot sampleplot');
+                // console.log('replot sampleplot');
 
                 var columns = ['lt1c', 'lt2c', 'lt3c', 'lt1p', 'lt2p', 'lt3p'],
                     vectors = {};
@@ -50,21 +57,7 @@ app.directive('sampleplot', function() {
                     vectors[col] = _.pluck($scope.shared.filteredRows, col);
                 });
 
-                var norm;
-                switch ($scope.selectedNorm) {
-                    case 1:
-                        norm = function (arr) {
-                            arr = numeric.abs(arr);
-                            return numeric.sum(arr);
-                        }
-                        break;
-                    case 2:
-                        norm = numeric.norm2;
-                        break;
-                    case 3:
-                        norm = numeric.norminf;
-                        break;
-                }
+                var distFn = _.compose($scope.norms.selected.norm, numeric.sub);
 
                 var distances = [];
                 for (var i = 0; i < columns.length; i++) {
@@ -75,7 +68,7 @@ app.directive('sampleplot', function() {
                         } else if (i > j) {
                             dist.push(distances[j][i]);
                         } else {
-                            dist.push(norm(numeric.sub(vectors[columns[i]], vectors[columns[j]])));
+                            dist.push(distFn(vectors[columns[i]], vectors[columns[j]]));
                         }
                     }
                     distances.push(dist);
@@ -156,5 +149,5 @@ app.directive('sampleplot', function() {
                 $scope.replot();
             });
         }]
-    }
+    };
 });

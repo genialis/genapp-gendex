@@ -1,3 +1,4 @@
 'use strict';
 
-var app = angular.module('gendex.widgets', []); //init widgets module
+angular.module('gendex.widgets', []) //init widgets module
+;
