@@ -11,136 +11,98 @@ angular.module('gendex.widgets')
         templateUrl: '/static/genapp-gendex/partials/directives/dextable.html',
         controller: ['$scope', 'filterByFieldText', 'notify', 'Data', '$routeParams',
         function ($scope, filterByFieldText, notify, Data, $routeParams) {
-            $scope.gridOptions = {};
-            $scope.data = {};
             $scope.gridVisible = false;
-            $scope.fieldsValuesCount = 0;
             // console.log('inside dextable ctrl');
 
-            function initErrorNotify (msg, error) {
-                $scope.errorMsg = msg;
-                $scope.$on('notifyReady', function (error) {
-                    notify.error($scope.errorMsg)(error);
+            var split = _.curry(function (delim, str) {
+                return str.split(delim);
+            });
+            var replace = _.curry(function (from, to, str) {
+                return str.replace(from, to);
+            });
+
+            function parseData(data) {
+                var lines = data.split(/\n+/);
+                var table = _.map(lines, split(/\t/));
+
+                var tabHeader = _.map(table[0], replace(/\./g, '_'));
+
+                var keepMask = _.map(tabHeader, function (col) {
+                    var lowCol = col.toLowerCase();
+                    return /counts/i.test(lowCol) || _.indexOf(['gene', 'fdr_de', 'lik_nde'], lowCol) >= 0;
                 });
-                $scope.gridVisible = false;
+                var keptHeader = _.filter(tabHeader, function (col, ix) {
+                    return keepMask[ix];
+                });
+
+                var ret = {};
+                var ltcc = 1;
+                var ltpc = 1;
+                ret.cols = _.map(keptHeader, function (col) {
+                    var ret = {field: col, displayName: col, width: '**'};
+
+                    if (/counts/i.test(col)) {
+                        var newColName = /case/i.test(col) ? ['lt', ltcc++, 'c'] : ['lt', ltpc++, 'p'];
+                        newColName = newColName.join('');
+                        ret = {field: newColName, displayName: newColName.toUpperCase(), width: '*'};
+                    }
+                    return ret;
+                });
+                var newFields = _.map(ret.cols, 'field');
+                ret.rows = _.map(table.slice(1), function (row) {
+                    return _.zipObject(newFields, _.filter(row, function (col, ix) {
+                        return keepMask[ix];
+                    }));
+                });
+                return ret;
             }
 
             // request JSON data
-            Data.get({'id': $routeParams.id}, function (caseData) {
-                if (_.contains(caseData.type, 'differentialexpression') && _.contains(caseData.status, 'done')) {
-                    // request tab-delimited file
-                    Data.download({'id': $routeParams.id, 'file': caseData.output.diffexp.file}, function (raw) {
-                        var data = raw.data;
-                        // tab header
-                        $scope.tabHeader = data.slice(0, data.indexOf('\n')).replace(/\./g, '_').split(/[\t]/);
-                        // data
-                        var vals = data.slice(data.indexOf('\n') + 1, data.length + 1).split(/[\n]+/);
-                        $scope.data.values = vals;
-                        // nr. of columns test
-                        if (typeof vals[0] !== 'undefined') $scope.colCount = $scope.tabHeader.length;
-                        // objective trigger
-                        $scope.fieldsValuesCount = $scope.fieldsValuesCount + 1;
-                    }, function (error) {
-                        initErrorNotify('failed tab file request', error);
-                    });
+            Data.get({'id': $routeParams.id}, function (diffData) {
+                if (!diffData || !_.contains(diffData.type, 'differentialexpression') || !_.contains(diffData.status, 'done')) {
+                    notify({message: 'Bad data requested', type: 'error'});
+                    return;
                 }
-                else initErrorNotify('wrong case id request', 'error');
-            }, function (error) {
-                initErrorNotify('failed JSON file request via api', error);
-            });
-
-            // when upgrading to AngularJS 1.3, replace $watchCollection with $watchGroup
-            // wait for both case and control column counts, build column definitions
-            $scope.$watch('colCount', function (count) {
-                if (typeof count !== 'undefined') {
-                    // build column definitions
-                    var columnDefs = [],
-                        ltcc = 1,
-                        ltpc = 1,
-                        tabHeader = $scope.tabHeader;
-
-                    for (var i = 0; i < count; i++) {
-                        var tH = tabHeader[i].toLowerCase();
-                        // case-control columns
-                        if (_.contains(tH, 'counts')) {
-                            var field = _.contains(tH, 'case') ? ['lt', ltcc++, 'c'] : ['lt', ltpc++, 'p'];
-                            field = field.join('');
-
-                            columnDefs.push({field: field, displayName: field.toUpperCase(), width: '*'});
-                        }
-                        // the rest: {fdr.de, lik.nde} (manual pick for now)
-                        else if (_.indexOf(['gene', 'fdr_de', 'lik_nde'], tH) > -1) {
-                            columnDefs.push({field: tH, displayName: tH.toUpperCase(), width: '**'});
-                        }
-                    }
-                    // push data to scope
-                    $scope.columnDefs = columnDefs;
-                    // objective trigger
-                    $scope.fieldsValuesCount = $scope.fieldsValuesCount + 1;
+                if (!diffData.output && diffData.output.diffexp && diffData.output.diffexp.file) {
+                    notify({message: 'Differential Expressions file is missing in requested data', type: 'error'});
+                    return;
                 }
-            });
+                // request tab-delimited file
+                Data.download({'id': $routeParams.id, 'file': diffData.output.diffexp.file}, function (raw) {
+                    var parsed = parseData(raw.data);
 
-            // trigger when both objective triggers
-            $scope.$watch('fieldsValuesCount', function (val) {
-                // construct table and populate ng-grid
-                if (val == 2) {
-                    var line = null,
-                        newline = null,
-                        grid = [];
-                    for (var i = 0; i < $scope.data.values.length; i++) {
-                        line = $scope.data.values[i].split(/[\t]/);
-                        newline = {};
-                        for (var j = 0; j < $scope.columnDefs.length; j++) {
-                            newline[$scope.columnDefs[j].field] = line[j];
-                        }
-                        grid.push(newline);
-                    }
-                    $scope.shared.data = grid;
-                    $scope.shared.filteredRows = grid;
-                }
-            });
+                    $scope.columnDefs = parsed.cols;
+                    $scope.shared.data = parsed.rows;
+                    $scope.shared.filteredRows = parsed.rows;
+                    $scope.gridVisible = true;
 
-            // set ng-grid options
-            $scope.$watchCollection('shared.filteredRows', function (data) {
-                $scope.gridOptions.data = 'shared.filteredRows';
-                $scope.gridOptions.filterOptions = $scope.filterOptions;
-                $scope.gridOptions.selectedItems = [];
-                $scope.gridOptions.beforeSelectionChange = beforeSelection;
-                $scope.gridOptions.columnDefs = 'columnDefs';
-            });
+                }, notify.error('get Differential Expressions file'));
+            }, notify.error('get Differential Expressions data'));
 
-            // make ng-grid visible
-            $scope.$watch('gridOptions', function (grid) {
-                $scope.gridVisible = true;
-            });
-            
-            function beforeSelection (rowItem, event) {
-                if (event.type == 'click') {
-                    $scope.shared.selectedRow = rowItem;
-                    return false;
-                }
-                return true;
-            }
-
-            $scope.filterOptions = {
-                filterText: '',
-                useExternalFilter: true
+            $scope.selectedItems = [];
+            $scope.gridOptions = {
+                data: 'shared.filteredRows',
+                filterOptions: { filterText: '', useExternalFilter: true},
+                selectedItems: $scope.selectedItems,
+                multiSelect: false,
+                columnDefs: 'columnDefs'
             };
-
-            $scope.$watch('filterOptions.filterText', function (val) {
-                if (typeof $scope.shared.filteredRows !== 'undefined') {
-                    $scope.shared.filteredRows = filterByFieldText($scope.shared.data, val, true, true);
-                }
+            $scope.$watchCollection('selectedItems', function (items) {
+                $scope.shared.selectedRow = items.length>0 && items[0];
             });
 
-            $scope.$watch('shared.selectedGenes', function (rows) {
-                if ($scope.gridVisible) {
-                    // $scope.gridOptions.selectAll(false);
-                    for (var i = 0; i < rows.length; i++) {
-                        var index = $scope.data.indexOf(rows[i]);
-                        $scope.gridOptions.selectItem(index, true);
-                    }
-                }
+            function refilter() {
+                if (!$scope.shared.filteredRows) return;
+                $scope.shared.filteredRows = filterByFieldText($scope.shared.data, $scope.gridOptions.filterOptions.filterText, false, true);
+            }
+            $scope.$watch('gridOptions.filterOptions.filterText', refilter);
+            $scope.$watchCollection('shared.data', refilter);
+
+            $scope.$watchCollection('shared.selectedGenes', function (rows) {
+                if (!$scope.gridVisible) return;
+
+                var setSelected = _.partialRight($scope.gridOptions.selectItem, true);
+                _.map(rows, _.compose(setSelected, $scope.shared.data.indexOf));
             });
         }]
     };

@@ -14,7 +14,15 @@ angular.module('gendex.widgets')
 
             var flotElem = $element.find('div.flotChart');
 
-            $scope.selectedNorm = 2;
+            $scope.norms = {
+                all: [
+                    { name: 'Manhattan', norm: _.compose(numeric.sum, numeric.abs) },
+                    { name: 'Euclidean', norm: numeric.norm2   },
+                    { name: 'Maximum',   norm: numeric.norminf }
+                ],
+                selected: null
+            };
+            $scope.norms.selected = $scope.norms.all[1];
 
             function mds(distances, dimensions) {
                 dimensions = dimensions || 2;
@@ -32,7 +40,7 @@ angular.module('gendex.widgets')
                     }
                 }
 
-                var ret = numeric.svd(M),
+                var ret = numeric.svd(M), //TODO: this is throwing "Error: no convergence."
                     eigenValues = numeric.sqrt(ret.S);
                 return ret.U.map(function(row) {
                     return numeric.mul(row, eigenValues).splice(0, dimensions);
@@ -49,21 +57,7 @@ angular.module('gendex.widgets')
                     vectors[col] = _.pluck($scope.shared.filteredRows, col);
                 });
 
-                var norm;
-                switch ($scope.selectedNorm) {
-                    case 1:
-                        norm = function (arr) {
-                            arr = numeric.abs(arr);
-                            return numeric.sum(arr);
-                        };
-                        break;
-                    case 2:
-                        norm = numeric.norm2;
-                        break;
-                    case 3:
-                        norm = numeric.norminf;
-                        break;
-                }
+                var distFn = _.compose($scope.norms.selected.norm, numeric.sub);
 
                 var distances = [];
                 for (var i = 0; i < columns.length; i++) {
@@ -74,7 +68,7 @@ angular.module('gendex.widgets')
                         } else if (i > j) {
                             dist.push(distances[j][i]);
                         } else {
-                            dist.push(norm(numeric.sub(vectors[columns[i]], vectors[columns[j]])));
+                            dist.push(distFn(vectors[columns[i]], vectors[columns[j]]));
                         }
                     }
                     distances.push(dist);
