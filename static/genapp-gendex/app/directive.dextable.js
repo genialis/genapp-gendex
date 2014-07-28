@@ -39,7 +39,7 @@ angular.module('gendex.widgets')
                 var ltcc = 1;
                 var ltpc = 1;
                 ret.cols = _.map(keptHeader, function (col) {
-                    var ret = {field: col, displayName: col, width: '**'};
+                    var ret = {field: col.toLowerCase(), displayName: col, width: '**'};
 
                     if (/counts/i.test(col)) {
                         var newColName = /case/i.test(col) ? ['lt', ltcc++, 'c'] : ['lt', ltpc++, 'p'];
@@ -88,12 +88,12 @@ angular.module('gendex.widgets')
                 columnDefs: 'columnDefs'
             };
             $scope.$watchCollection('selectedItems', function (items) {
-                $scope.shared.selectedRow = items.length>0 && items[0];
+                $scope.shared.selectedRow = items.length > 0 && items[0];
             });
 
             function refilter() {
                 if (!$scope.shared.filteredRows) return;
-                $scope.shared.filteredRows = filterByFieldText($scope.shared.data, $scope.gridOptions.filterOptions.filterText, false, true);
+                $scope.shared.filteredRows = filterByFieldText($scope.shared.data, $scope.gridOptions.filterOptions.filterText, true, true);
             }
             $scope.$watch('gridOptions.filterOptions.filterText', refilter);
             $scope.$watchCollection('shared.data', refilter);
