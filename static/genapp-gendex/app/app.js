@@ -14,8 +14,5 @@ angular.module('gendex', ['genjs.filters', 'genjs.services', 'gendex.controllers
 	        controller: 'GenDexCtrl'
 	    });
 }])
-.config(['$httpProvider', function ($httpProvider) {
-    // Adds a csrftoken to all http requests.
-    $httpProvider.defaults.headers.common['X-CSRFToken'] = $.cookie('csrftoken');
-}])
+.constant('title', 'GenDex')
 ;
