@@ -27,7 +27,7 @@ angular.module('gendex.widgets')
             function mds(distances, dimensions) {
                 dimensions = dimensions || 2;
 
-                var M = numeric.mul(-.5, numeric.pow(distances, 2));
+                var M = numeric.mul(-0.5, numeric.pow(distances, 2));
 
                 function mean(A) { return numeric.div(numeric.add.apply(null, A), A.length); }
                 var rowMeans = mean(M),
