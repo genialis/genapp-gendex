@@ -6,8 +6,13 @@ angular.module('gendex.controllers', [])
         data: [],
         filteredRows: [],
         selectedRow: [],
-        selectedGenes: []
+        selectedGenes: [],
+        widgets: {
+            elements: {},
+            childElements: {},
+            turnedOn: {}
+        },
+        markedGenesSet: {} // all keys should be either true or deleted
     };
-
 }])
 ;

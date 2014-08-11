@@ -29,7 +29,7 @@ angular.module('gendex.widgets')
 
                 var keepMask = _.map(tabHeader, function (col) {
                     var lowCol = col.toLowerCase();
-                    return /counts/i.test(lowCol) || _.indexOf(['gene', 'fdr_de', 'lik_nde'], lowCol) >= 0;
+                    return /counts|rpkum/i.test(lowCol) || _.indexOf(['gene', 'fdr_de', 'lik_nde'], lowCol) >= 0;
                 });
                 var keptHeader = _.filter(tabHeader, function (col, ix) {
                     return keepMask[ix];
@@ -39,13 +39,19 @@ angular.module('gendex.widgets')
                 var ltcc = 1;
                 var ltpc = 1;
                 ret.cols = _.map(keptHeader, function (col) {
-                    var ret = {field: col.toLowerCase(), displayName: col, width: '**'};
+                    var ret = null;
 
                     if (/counts/i.test(col)) {
                         var newColName = /case/i.test(col) ? ['lt', ltcc++, 'c'] : ['lt', ltpc++, 'p'];
                         newColName = newColName.join('');
                         ret = {field: newColName, displayName: newColName.toUpperCase(), width: '*'};
                     }
+                    else if (/rpkum/i.test(col)) {
+                        var newColName = /case/i.test(col) ? 'rpkumcase' : 'rpkumctrl';
+                        ret = {field: newColName, displayName: col, width: '*'};
+                    }
+                    else ret = {field: col.toLowerCase(), displayName: col, width: '**'};
+
                     return ret;
                 });
                 var newFields = _.map(ret.cols, 'field');
@@ -70,7 +76,6 @@ angular.module('gendex.widgets')
                 // request tab-delimited file
                 Data.download({'id': $routeParams.id, 'file': diffData.output.diffexp.file}, function (raw) {
                     var parsed = parseData(raw.data);
-
                     $scope.columnDefs = parsed.cols;
                     $scope.shared.data = parsed.rows;
                     $scope.shared.filteredRows = parsed.rows;
