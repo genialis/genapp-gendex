@@ -11,8 +11,11 @@ angular.module('gendex.widgets')
         templateUrl: '/static/genapp-gendex/partials/directives/dextable.html',
         controller: ['$scope', 'filterByFieldText', 'notify', 'Data', '$routeParams',
         function ($scope, filterByFieldText, notify, Data, $routeParams) {
+            console.log('inside dextable ctrl');
+            // TODO remove shared.gendex when StateUrl gets fixed for GenDex
+            $scope.shared.gendex = true;
+            $scope.shared.sampleCols = [];
             $scope.gridVisible = false;
-            // console.log('inside dextable ctrl');
 
             var split = _.curry(function (delim, str) {
                 return str.split(delim);
@@ -23,7 +26,8 @@ angular.module('gendex.widgets')
 
             function parseData(data) {
                 var lines = data.split(/\n+/);
-                var table = _.map(lines, split(/\t/));
+                // TODO: Better error checking (i.e. check whether line splits match the number of header columns)
+                var table = _.filter(_.map(lines, split(/\t/)), function (line) { return line.length > 1; });
 
                 var tabHeader = _.map(table[0], replace(/\./g, '_'));
 
@@ -45,10 +49,11 @@ angular.module('gendex.widgets')
                         var newColName = /case/i.test(col) ? ['lt', ltcc++, 'c'] : ['lt', ltpc++, 'p'];
                         newColName = newColName.join('');
                         ret = {field: newColName, displayName: newColName.toUpperCase(), width: '*'};
+                        $scope.shared.sampleCols.push(newColName);
                     }
                     else if (/rpkum/i.test(col)) {
                         var newColName = /case/i.test(col) ? 'rpkumcase' : 'rpkumctrl';
-                        ret = {field: newColName, displayName: col, width: '*'};
+                        ret = {field: newColName, displayName: col, width: '*', visible: false};
                     }
                     else ret = {field: col.toLowerCase(), displayName: col, width: '**'};
 
@@ -80,7 +85,6 @@ angular.module('gendex.widgets')
                     $scope.shared.data = parsed.rows;
                     $scope.shared.filteredRows = parsed.rows;
                     $scope.gridVisible = true;
-
                 }, notify.error('get Differential Expressions file'));
             }, notify.error('get Differential Expressions data'));
 

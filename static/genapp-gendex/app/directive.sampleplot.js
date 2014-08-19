@@ -50,13 +50,12 @@ angular.module('gendex.widgets')
             $scope.replot = function () {
                 // console.log('replot sampleplot');
 
-                var columns = ['lt1c', 'lt2c', 'lt3c', 'lt1p', 'lt2p', 'lt3p'],
+                var columns = $scope.shared.sampleCols,
                     vectors = {};
 
                 angular.forEach(columns, function (col) {
                     vectors[col] = _.pluck($scope.shared.filteredRows, col);
                 });
-
                 var distFn = _.compose($scope.norms.selected.norm, numeric.sub);
 
                 var distances = [];
@@ -101,10 +100,10 @@ angular.module('gendex.widgets')
                         }
                     },
                     xaxis: {
-                        show: false
+                        show: true
                     },
                     yaxis: {
-                        show: false
+                        show: true
                     }
                 };
 
@@ -146,7 +145,7 @@ angular.module('gendex.widgets')
             });
 
             $scope.$watch("shared.filteredRows", function () {
-                $scope.replot();
+                if (!_.isEmpty($scope.shared.sampleCols)) $scope.replot();
             });
         }]
     };
