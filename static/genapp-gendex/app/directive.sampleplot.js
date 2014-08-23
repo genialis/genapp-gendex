@@ -11,8 +11,8 @@ angular.module('gendex.widgets')
         templateUrl: '/static/genapp-gendex/partials/directives/sampleplot.html',
         controller: ['$scope', '$attrs', '$element', function ($scope, $attrs, $element) {
             // console.log('inside sampleplot ctrl');
-
             var flotElem = $element.find('div.flotChart');
+            var ltcc = 0;
 
             $scope.norms = {
                 all: [
@@ -40,7 +40,7 @@ angular.module('gendex.widgets')
                     }
                 }
 
-                var ret = numeric.svd(M), //TODO: this is throwing "Error: no convergence."
+                var ret = numeric.svd(M),
                     eigenValues = numeric.sqrt(ret.S);
                 return ret.U.map(function(row) {
                     return numeric.mul(row, eigenValues).splice(0, dimensions);
@@ -50,6 +50,7 @@ angular.module('gendex.widgets')
             $scope.replot = function () {
                 // console.log('replot sampleplot');
 
+                // TODO: More robust retrieval of sample entities ltXc/ltXp, better pluck unique filteredRows keys
                 var columns = $scope.shared.sampleCols,
                     vectors = {};
 
@@ -76,9 +77,10 @@ angular.module('gendex.widgets')
                 var coordinates = mds(distances);
 
                 var newSize = {
-                    width: $element.width(),
-                    height: $element.width()
-                };
+                        width: $element.parent().width() - 30,
+                        height: $element.parent().height() - $element.find('.widgetControls').height() -
+                                $element.parents('.windowContent').siblings('.graphHandle').height()
+                    };
 
                 var flotOptions = {
                     series: {
@@ -110,30 +112,29 @@ angular.module('gendex.widgets')
                 flotElem.css(newSize);
 
                 var flotPlot;
-                try{
-                    flotPlot = $.plot(flotElem, [{data: coordinates.splice(0,3), color: 'red'}, {data: coordinates, color: 'blue'}], flotOptions);
+                try {
+                    for (var i = 0; i < columns.length; i++) {
+                        if (/c/i.test(columns[i])) ltcc++;
+                    }
+                    flotPlot = $.plot(flotElem, [{data: coordinates.splice(0, ltcc), color: 'red'}, {data: coordinates, color: 'blue'}], flotOptions);
+                    ltcc = 0;
                 } catch (err) {}
             };
 
-            var tooltipElem = $element.find('div.tooltip');
+            /*var tooltipElem = $element.find('div.tooltip');
             flotElem.bind("plothover", function (event, pos, item) {
                 if (item) {
-
                     var text;
                     if (item.seriesIndex == 0) {
-                        switch (item.dataIndex) {
-                            case 0: text = "LT1C"; break;
-                            case 1: text = "LT2C"; break;
-                            case 2: text = "LT3C"; break;
-                        }
-                    } else {
-                        switch (item.dataIndex) {
-                            case 0: text = "LT1P"; break;
-                            case 1: text = "LT2P"; break;
-                            case 2: text = "LT3P"; break;
-                        }
+                        text = ['LT', item.dataIndex + 1, 'C'].join('');
+                    }
+                    else {
+                        text = ['LT', item.dataIndex + 1, 'P'].join('');
                     }
 
+                    console.log($element);
+                    console.log($element.position());
+                    // TODO: See volcanoplot how it gets tooltip coords in GenExpress
                     var x = pos.pageX - $element.position().left,
                         y = pos.pageY - $element.position().top;
                     tooltipElem.html(text);
@@ -142,8 +143,43 @@ angular.module('gendex.widgets')
                 } else {
                     tooltipElem.hide();
                 }
-            });
+            });*/
 
+            // needed because of window directives (probably)
+            function tooltips() {
+                var tooltipAppendTo = flotElem;
+
+                /** Tooltip for selected points on hover */
+                var tooltipElemSelected = null;
+                var contentElemSelected = null;
+                $scope.hoveredItem = null;
+                flotElem.on("plothover", function (event, pos, item) {
+                    $scope.hoveredItem = item;
+                    if(!item || flotElem.data('dragging')){
+                        if(tooltipElemSelected){
+                            flotDestroyTooltip(tooltipElemSelected);
+                            tooltipElemSelected = null;
+                        }
+                    }
+                    else {
+                        if (!tooltipElemSelected) {
+                            tooltipElemSelected = flotCreateTooltip(tooltipAppendTo);
+                            contentElemSelected = tooltipElemSelected.find('.content');
+                        }
+
+                        var tooltipText;
+                        if (item.seriesIndex == 0) {
+                            tooltipText = ['LT', item.dataIndex + 1, 'C'].join('');
+                        }
+                        else {
+                            tooltipText = ['LT', item.dataIndex + 1, 'P'].join('');
+                        }
+                        flotMoveTooltip(tooltipAppendTo, pos.pageX, pos.pageY, tooltipElemSelected, contentElemSelected, tooltipText);
+                    }
+                });
+            }
+            tooltips();
+            
             $scope.$watch("shared.filteredRows", function () {
                 if (!_.isEmpty($scope.shared.sampleCols)) $scope.replot();
             });

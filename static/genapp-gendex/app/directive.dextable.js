@@ -53,7 +53,7 @@ angular.module('gendex.widgets')
                     }
                     else if (/rpkum/i.test(col)) {
                         var newColName = /case/i.test(col) ? 'rpkumcase' : 'rpkumctrl';
-                        ret = {field: newColName, displayName: col, width: '*', visible: false};
+                        ret = {field: newColName, displayName: col, width: '*', visible: true};
                     }
                     else ret = {field: col.toLowerCase(), displayName: col, width: '**'};
 
