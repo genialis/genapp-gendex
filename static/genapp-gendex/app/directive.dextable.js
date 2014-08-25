@@ -83,36 +83,51 @@ angular.module('gendex.widgets')
                     var parsed = parseData(raw.data);
                     $scope.columnDefs = parsed.cols;
                     $scope.shared.data = parsed.rows;
-                    $scope.shared.filteredRows = parsed.rows;
+                    $scope.shared.selectedGenes = parsed.rows;
                     $scope.gridVisible = true;
                 }, notify.error('get Differential Expressions file'));
             }, notify.error('get Differential Expressions data'));
 
-            $scope.selectedItems = [];
+            // testing whether we can do without commented rows
+            // $scope.selectedItems = [];
             $scope.gridOptions = {
-                data: 'shared.filteredRows',
+                data: 'shared.selectedGenes',
                 filterOptions: { filterText: '', useExternalFilter: true},
-                selectedItems: $scope.selectedItems,
+                selectedItems: [],
                 multiSelect: false,
                 columnDefs: 'columnDefs'
             };
-            $scope.$watchCollection('selectedItems', function (items) {
+            /*$scope.$watchCollection('selectedItems', function (items) {
+                console.log('needed?');
                 $scope.shared.selectedRow = items.length > 0 && items[0];
-            });
+                console.log($scope.shared.selectedRow);
+            });*/
 
             function refilter() {
-                if (!$scope.shared.filteredRows) return;
-                $scope.shared.filteredRows = filterByFieldText($scope.shared.data, $scope.gridOptions.filterOptions.filterText, true, true);
+                if (!$scope.shared.selectedGenes) return;
+                $scope.shared.selectedGenes = filterByFieldText($scope.shared.data, $scope.gridOptions.filterOptions.filterText, true, true);
             }
             $scope.$watch('gridOptions.filterOptions.filterText', refilter);
             $scope.$watchCollection('shared.data', refilter);
 
-            $scope.$watchCollection('shared.selectedGenes', function (rows) {
+            /*$scope.$watchCollection('shared.selectedGenes', function (rows) {
                 if (!$scope.gridVisible) return;
 
-                var setSelected = _.partialRight($scope.gridOptions.selectItem, true);
-                _.map(rows, _.compose(setSelected, $scope.shared.data.indexOf));
-            });
+                // this is just weird
+                var setSelected = _.partialRight($scope.gridOptions.selectedGenes, true);
+                console.log('$scope.shared.data.indexOf');
+                console.log($scope.shared.data.indexOf);
+                return _.map(rows, _.compose(setSelected, $scope.shared.data.indexOf));
+            });*/
+
+            // TODO: determine markedGenesSet usefulness in dextable example (maybe partial views will demand it?)
+            $scope.shared.getMarkedOrSelectedGenes = function () {
+                var ret = $scope.shared.selectedGenes;
+                /*if(!$.isEmptyObject($scope.shared.markedGenesSet)){
+                    ret = _.keys($scope.shared.markedGenesSet);
+                }*/
+                return ret;
+            };
         }]
     };
 });
