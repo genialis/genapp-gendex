@@ -96,7 +96,9 @@ angular.module('gendex.controllers', [])
 
         $scope.startedWidgetsPositions = false;
         $timeout(function () {
-            $scope.loadPos($scope.positions2222);
+            // loadedState part taken out of original function from GenExpress controller.js
+            (localStorage.genexpressWindowsInfo) ?
+            $scope.loadPos(JSON.parse(localStorage.genexpressWindowsInfo)) : $scope.loadPos($scope.positions2222);
             $scope.startedWidgetsPositions = true;
         }, 0);
 
@@ -124,6 +126,23 @@ angular.module('gendex.controllers', [])
 
             return _.object(keys, cols);
         };
+
+        $scope.$watch(cachedThrottle($scope, function () {
+            return $scope.getWindowsInfo();
+        }, 600), function (windowsInfo) {
+            if ($scope.startedWidgetsPositions) {
+                $scope.relativeWindowsInfo = angular.copy(windowsInfo);
+                var relativeToWidth = $('.windowWidthRef').width();
+                angular.forEach($scope.relativeWindowsInfo.width, function (width, ix) {
+                    $scope.relativeWindowsInfo.width[ix] /= relativeToWidth;
+                    $scope.relativeWindowsInfo.height[ix] /= relativeToWidth;
+                    $scope.relativeWindowsInfo.top[ix] /= relativeToWidth;
+                    $scope.relativeWindowsInfo.left[ix] /= relativeToWidth;
+                });
+                // why localStorage? remove all instances, if possible
+                localStorage.genexpressWindowsInfo = JSON.stringify(windowsInfo);
+            }
+        }, true);
 
         $scope.$root.objectKeys = function (obj) {
             return _.keys(obj);

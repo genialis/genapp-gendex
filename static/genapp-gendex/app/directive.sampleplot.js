@@ -9,9 +9,9 @@ angular.module('gendex.widgets')
         },
         replace: false,
         templateUrl: '/static/genapp-gendex/partials/directives/sampleplot.html',
-        controller: ['$scope', '$attrs', '$element', function ($scope, $attrs, $element) {
+        controller: ['$scope', '$attrs', '$element', '$timeout', 'cachedThrottle', function ($scope, $attrs, $element, $timeout, cachedThrottle) {
             // console.log('inside sampleplot ctrl');
-            var flotElem = $element.find('div.flotChart');
+            var flotElem = $element.find('div.flotChart2');
             var ltcc = 0;
 
             $scope.norms = {
@@ -55,7 +55,7 @@ angular.module('gendex.widgets')
                     vectors = {};
 
                 angular.forEach(columns, function (col) {
-                    vectors[col] = _.pluck($scope.shared.filteredRows, col);
+                    vectors[col] = _.pluck($scope.shared.selectedGenes, col);
                 });
                 var distFn = _.compose($scope.norms.selected.norm, numeric.sub);
 
@@ -77,10 +77,10 @@ angular.module('gendex.widgets')
                 var coordinates = mds(distances);
 
                 var newSize = {
-                        width: $element.parent().width() - 30,
-                        height: $element.parent().height() - $element.find('.widgetControls').height() -
-                                $element.parents('.windowContent').siblings('.graphHandle').height()
-                    };
+                    width: $element.parent().width() - 30,
+                    height: $element.parent().height() - $element.find('.widgetControls').height() -
+                            $element.parents('.windowContent').siblings('.graphHandle').height()
+                };
 
                 var flotOptions = {
                     series: {
@@ -111,15 +111,35 @@ angular.module('gendex.widgets')
 
                 flotElem.css(newSize);
 
+                // draw
                 var flotPlot;
-                try {
-                    for (var i = 0; i < columns.length; i++) {
-                        if (/c/i.test(columns[i])) ltcc++;
-                    }
-                    flotPlot = $.plot(flotElem, [{data: coordinates.splice(0, ltcc), color: 'red'}, {data: coordinates, color: 'blue'}], flotOptions);
-                    ltcc = 0;
-                } catch (err) {}
+                
+                $timeout(function () { //end of transition/animation
+                    try {
+                        for (var i = 0; i < columns.length; i++) if (/c/i.test(columns[i])) ltcc++;
+                        flotPlot = $.plot(flotElem, [{data: coordinates.splice(0, ltcc), color: 'red'}, {data: coordinates, color: 'blue'}], flotOptions);
+                        ltcc = 0;
+                    } catch (err) {}
+                }, 200);
             };
+
+            // DANGEROUS
+
+            // var delayedReload = _.debounce($scope.reload, 200);
+            // var delayedReplot = _.debounce($scope.replot, 200);
+            // var flotElem = $element.find('div.flotChart');
+
+            // $scope.$watchCollection('shared.selectedGenes', delayedReplot);
+            // $scope.$watchCollection('shared.markedGenesSet', delayedReplot);
+            // $scope.$watch('shared.selectedDiffType', delayedReload);
+
+            // $scope.$watch(cachedThrottle($scope, function () {
+            //     return $element.width() + ',' + $element.height();
+            // }, 200), function (v) {
+            //     $scope.replot();
+            // });
+
+
 
             /*var tooltipElem = $element.find('div.tooltip');
             flotElem.bind("plothover", function (event, pos, item) {
@@ -179,8 +199,8 @@ angular.module('gendex.widgets')
                 });
             }
             tooltips();
-            
-            $scope.$watch("shared.filteredRows", function () {
+
+            $scope.$watch("shared.selectedGenes", function () {
                 if (!_.isEmpty($scope.shared.sampleCols)) $scope.replot();
             });
         }]
