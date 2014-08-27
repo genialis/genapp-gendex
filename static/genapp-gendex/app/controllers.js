@@ -5,7 +5,6 @@ angular.module('gendex.controllers', [])
 		function ($scope, $http, $timeout, $location, Data, StorageRequest, notify, cachedThrottle, StateUrl) {
 	    $scope.shared = {
 	        data: [],
-	        filteredRows: [],
 	        selectedRow: [],
 	        selectedGenes: [],
 	        widgets: {

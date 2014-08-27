@@ -10,8 +10,8 @@ angular.module('gendex.widgets')
         replace: false,
         templateUrl: '/static/genapp-gendex/partials/directives/sampleplot.html',
         controller: ['$scope', '$attrs', '$element', '$timeout', 'cachedThrottle', function ($scope, $attrs, $element, $timeout, cachedThrottle) {
-            // console.log('inside sampleplot ctrl');
-            var flotElem = $element.find('div.flotChart2');
+            console.log('inside sampleplot ctrl');
+            var flotElem = $element.find('div.flotChartMds');
             var ltcc = 0;
 
             $scope.norms = {
@@ -20,7 +20,8 @@ angular.module('gendex.widgets')
                     { name: 'Euclidean', norm: numeric.norm2   },
                     { name: 'Maximum',   norm: numeric.norminf }
                 ],
-                selected: null
+                selected: null,
+                disabled: true
             };
             $scope.norms.selected = $scope.norms.all[1];
 
@@ -48,9 +49,7 @@ angular.module('gendex.widgets')
             }
 
             $scope.replot = function () {
-                // console.log('replot sampleplot');
-
-                // TODO: More robust retrieval of sample entities ltXc/ltXp, better pluck unique filteredRows keys
+                $scope.norms.disabled = false;
                 var columns = $scope.shared.sampleCols,
                     vectors = {};
 
@@ -101,12 +100,12 @@ angular.module('gendex.widgets')
                             left: 1
                         }
                     },
-                    xaxis: {
-                        show: true
-                    },
-                    yaxis: {
-                        show: true
-                    }
+                    xaxes: [{
+                        axisLabel: '', // TODO: Set or delete
+                    }],
+                    yaxes: [{
+                        axisLabel: '', // TODO: Set or delete
+                    }],
                 };
 
                 flotElem.css(newSize);
@@ -123,49 +122,18 @@ angular.module('gendex.widgets')
                 }, 200);
             };
 
-            // DANGEROUS
+            var delayedReplot = _.debounce($scope.replot, 200);
 
-            // var delayedReload = _.debounce($scope.reload, 200);
-            // var delayedReplot = _.debounce($scope.replot, 200);
-            // var flotElem = $element.find('div.flotChart');
+            $scope.$watch('shared.selectedGenes', function () {
+                if (!_.isEmpty($scope.shared.sampleCols)) delayedReplot();
+            });
 
-            // $scope.$watchCollection('shared.selectedGenes', delayedReplot);
-            // $scope.$watchCollection('shared.markedGenesSet', delayedReplot);
-            // $scope.$watch('shared.selectedDiffType', delayedReload);
+            $scope.$watch(cachedThrottle($scope, function () {
+                return $element.width() + ',' + $element.height();
+            }, 200), function (v) {
+                if (!_.isEmpty($scope.shared.sampleCols)) delayedReplot();
+            });
 
-            // $scope.$watch(cachedThrottle($scope, function () {
-            //     return $element.width() + ',' + $element.height();
-            // }, 200), function (v) {
-            //     $scope.replot();
-            // });
-
-
-
-            /*var tooltipElem = $element.find('div.tooltip');
-            flotElem.bind("plothover", function (event, pos, item) {
-                if (item) {
-                    var text;
-                    if (item.seriesIndex == 0) {
-                        text = ['LT', item.dataIndex + 1, 'C'].join('');
-                    }
-                    else {
-                        text = ['LT', item.dataIndex + 1, 'P'].join('');
-                    }
-
-                    console.log($element);
-                    console.log($element.position());
-                    // TODO: See volcanoplot how it gets tooltip coords in GenExpress
-                    var x = pos.pageX - $element.position().left,
-                        y = pos.pageY - $element.position().top;
-                    tooltipElem.html(text);
-                    tooltipElem.css({top: y-20, left: x});
-                    tooltipElem.fadeIn(200);
-                } else {
-                    tooltipElem.hide();
-                }
-            });*/
-
-            // needed because of window directives (probably)
             function tooltips() {
                 var tooltipAppendTo = flotElem;
 
@@ -199,10 +167,6 @@ angular.module('gendex.widgets')
                 });
             }
             tooltips();
-
-            $scope.$watch("shared.selectedGenes", function () {
-                if (!_.isEmpty($scope.shared.sampleCols)) $scope.replot();
-            });
         }]
     };
 });

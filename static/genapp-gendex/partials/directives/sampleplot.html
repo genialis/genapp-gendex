@@ -1,4 +1,3 @@
-<!-- <div class="samplePlot windowPadding hasHead" ng-class="{invisible: !showControls}"> -->
 <div class="samplePlot windowPadding hasHead">
     <div class="widgetControls">
         <div class="btn-group-wrap">
@@ -6,11 +5,12 @@
                 <button type="button" class="btn btn-default"
                     ng-repeat="n in norms.all"
                     ng-click="norms.selected = n; replot();"
-                    ng-class="{active: norms.selected == n}">
+                    ng-class="{active: norms.selected == n}"
+                    ng-disabled="norms.disabled">
                     {{ n.name }}
                 </button>
             </div>
         </div>
     </div>
-    <div class="flotChart2 plotcanvas"></div>
+    <div class="flotChart flotChartMds plotcanvas"></div>
 </div>
