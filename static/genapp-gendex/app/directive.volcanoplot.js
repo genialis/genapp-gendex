@@ -9,34 +9,15 @@ angular.module('gendex.widgets')
         restrict: 'A',
         replace: false,
         templateUrl: '/static/genapp-gendex/partials/directives/volcanoplot.html',
-        controller: ['$scope', '$element', '$timeout', '$routeParams', 'notify', 'cachedThrottle', 'StorageRequest',
-            function ($scope, $element, $timeout, $routeParams, notify, cachedThrottle, StorageRequest) {
+        controller: ['$scope', '$element', '$timeout', '$routeParams', 'notify', 'cachedThrottle', 'StorageRequest', 'DiffExpParse',
+            function ($scope, $element, $timeout, $routeParams, notify, cachedThrottle, StorageRequest, DiffExpParse) {
                 console.log("inside volcanoplot ctrl");
                 $scope.shared.widgets.childElements.volcanoplot = $element;
 
                 $scope.refreshingData = true;
-                $scope.differentialData = { json: {} };
+                $scope.differentialData = {};
 
                 // TODO: Make StateUrl respond properly to GenDex (data from location).
-
-                /** Calculate volcanoplot coordinates */
-                function calcCoordinates(data) {
-                    var infIdx = [];
-                    var max = -Infinity;
-                    var coordinates = _.map(data, function (row, idx) {
-                        var x = Math.log((parseFloat(row.rpkumcase) + 1) / (parseFloat(row.rpkumctrl) + 1)) / Math.LN2;
-                        var y = -Math.log(parseFloat(row.fdr_de)) / Math.LN10;
-                        if (row.fdr_de == 0) infIdx.push(idx);
-                        if (y > max && y < Infinity) max = y;
-                        return [x, y];
-                    });
-
-                    _.forEach(infIdx, function (val) { // map Infinity coordinates to next max
-                        coordinates[val][1] = max;
-                    });
-
-                    return coordinates;
-                }
 
                 /** Dev helper function. */
                 // TODO: keep the watch for testing purposes (once gene selection comes into play)
@@ -44,7 +25,7 @@ angular.module('gendex.widgets')
                     if (!_.isArray(data)) return;
                     var genes = _.pluck(data, 'gene');
 
-                    $scope.differentialData.json = {flot: {data: calcCoordinates(data)}};
+                    $scope.differentialData.points = DiffExpParse.calculateVolcano(data);
                     $scope.differentialData.dictIxGenes = genes;
                     $scope.differentialData.dictGeneIxs = _.invert(genes);
 
@@ -60,7 +41,7 @@ angular.module('gendex.widgets')
                     var flotElem = $element.find('div.flotChart');
                     flotElem.css(newSize);
 
-                    $scope.scatterOptions.points = _.path($scope.differentialData, 'json.flot.data') || [];
+                    $scope.scatterOptions.points = $scope.differentialData.points || [];
                     if (_.isEmpty($scope.scatterOptions.points)) return;
 
                     $timeout($scope.scatterOptions.replot, 200); //end of transition/animation
@@ -70,7 +51,7 @@ angular.module('gendex.widgets')
 
 
                 $scope.scatterOptions = {
-                    xaxis: 'log2',
+                    xaxis: 'log2 fold change',
                     yaxis: '-log10(FDR)',
                     onInit: function (options) {
                     },

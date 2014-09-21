@@ -9,8 +9,8 @@ angular.module('gendex.widgets')
         },
         replace: false,
         templateUrl: '/static/genapp-gendex/partials/directives/dextable.html',
-        controller: ['$scope', 'filterByFieldText', 'notify', 'Data', '$routeParams',
-        function ($scope, filterByFieldText, notify, Data, $routeParams) {
+        controller: ['$scope', 'filterByFieldText', 'notify', 'Data', '$routeParams', 'DiffExpParse',
+        function ($scope, filterByFieldText, notify, Data, $routeParams, DiffExpParse) {
             console.log('inside dextable ctrl');
             // TODO remove shared.gendex when StateUrl gets fixed for GenDex
             $scope.shared.gendex = true;
@@ -24,50 +24,6 @@ angular.module('gendex.widgets')
                 return str.replace(from, to);
             });
 
-            function parseData(data) {
-                var lines = data.split(/\n+/);
-                // TODO: Better error checking (i.e. check whether line splits match the number of header columns)
-                var table = _.filter(_.map(lines, split(/\t/)), function (line) { return line.length > 1; });
-
-                var tabHeader = _.map(table[0], replace(/\./g, '_'));
-
-                var keepMask = _.map(tabHeader, function (col) {
-                    var lowCol = col.toLowerCase();
-                    return /counts|rpkum/i.test(lowCol) || _.indexOf(['gene', 'fdr_de', 'lik_nde'], lowCol) >= 0;
-                });
-                var keptHeader = _.filter(tabHeader, function (col, ix) {
-                    return keepMask[ix];
-                });
-
-                var ret = {};
-                var ltcc = 1;
-                var ltpc = 1;
-                ret.cols = _.map(keptHeader, function (col) {
-                    var ret = null;
-
-                    if (/counts/i.test(col)) {
-                        var newColName = /case/i.test(col) ? ['lt', ltcc++, 'c'] : ['lt', ltpc++, 'p'];
-                        newColName = newColName.join('');
-                        ret = {field: newColName, displayName: newColName.toUpperCase(), width: '*'};
-                        $scope.shared.sampleCols.push(newColName);
-                    }
-                    else if (/rpkum/i.test(col)) {
-                        var newColName = /case/i.test(col) ? 'rpkumcase' : 'rpkumctrl';
-                        ret = {field: newColName, displayName: col, width: '*', visible: true};
-                    }
-                    else ret = {field: col.toLowerCase(), displayName: col, width: '**'};
-
-                    return ret;
-                });
-                var newFields = _.map(ret.cols, 'field');
-                ret.rows = _.map(table.slice(1), function (row) {
-                    return _.zipObject(newFields, _.filter(row, function (col, ix) {
-                        return keepMask[ix];
-                    }));
-                });
-                return ret;
-            }
-
             // request JSON data
             Data.get({'id': $routeParams.id}, function (diffData) {
                 if (!diffData || !_.contains(diffData.type, 'differentialexpression') || !_.contains(diffData.status, 'done')) {
@@ -80,7 +36,8 @@ angular.module('gendex.widgets')
                 }
                 // request tab-delimited file
                 Data.download({'id': $routeParams.id, 'file': diffData.output.diffexp.file}, function (raw) {
-                    var parsed = parseData(raw.data);
+                    var parsed = DiffExpParse.parseTab(raw.data);
+                    $scope.shared.sampleCols = parsed.sampleCols;
                     $scope.columnDefs = parsed.cols;
                     $scope.shared.data = parsed.rows;
                     $scope.shared.selectedGenes = parsed.rows;
