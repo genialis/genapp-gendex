@@ -16,7 +16,6 @@ angular.module('gendex.widgets')
 
             $scope.norms = {
                 all: [
-                    { name: 'Manhattan', norm: _.compose(numeric.sum, numeric.abs) },
                     { name: 'Euclidean', norm: numeric.norm2   },
                     { name: 'Maximum',   norm: numeric.norminf }
                 ],
