@@ -5,7 +5,7 @@ var gendex = angular.module('gendex', ['gendex.widgets', 'ngRoute', 'ngGrid']);
 gendex.config(['$routeProvider', function ($routeProvider) {
     $routeProvider.otherwise({
         redirectTo: '/',
-        templateUrl: '/static/genapp-gendex/partials/gendex.html',
+        templateUrl: '/static/genpackage-gendex/partials/gendex.html',
         controller: GenDexCtrl
     });
 }]);

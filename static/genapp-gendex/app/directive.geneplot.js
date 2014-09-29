@@ -9,7 +9,7 @@ app.directive('geneplot', function() {
             shared: '='
         },
         replace: false,
-        templateUrl: '/static/genapp-gendex/partials/directives/geneplot.html',
+        templateUrl: '/static/genpackage-gendex/partials/directives/geneplot.html',
         controller: function ($scope, $http, $element, $timeout, $compile) {  //storageRequest, notify
             console.log("inside genplot ctrl");
 

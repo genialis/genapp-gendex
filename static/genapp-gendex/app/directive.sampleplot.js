@@ -9,7 +9,7 @@ app.directive('sampleplot', function() {
             shared: '='
         },
         replace: false,
-        templateUrl: '/static/genapp-gendex/partials/directives/sampleplot.html',
+        templateUrl: '/static/genpackage-gendex/partials/directives/sampleplot.html',
         controller: ['$scope', '$attrs', '$element', function ($scope, $attrs, $element) {
             console.log('inside sampleplot ctrl');
 

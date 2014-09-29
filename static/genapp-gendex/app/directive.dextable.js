@@ -9,7 +9,7 @@ app.directive('dextable', function() {
             shared: '='
         },
         replace: false,
-        templateUrl: '/static/genapp-gendex/partials/directives/dextable.html',
+        templateUrl: '/static/genpackage-gendex/partials/directives/dextable.html',
         controller: ['$scope', '$filter', '$element', function ($scope, $filter, $element) {
             console.log('inside dextable ctrl');
 
