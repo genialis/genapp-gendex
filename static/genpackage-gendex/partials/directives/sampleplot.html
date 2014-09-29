@@ -1,0 +1,16 @@
+<div>
+    <div class="btn-group-wrap">
+        <div class="btn-group">
+            <button type="button" class="btn btn-default"
+                ng-repeat="n in norms.all"
+                ng-click="norms.selected = n; replot();"
+                ng-class="{active: norms.selected == n}">
+                {{ n.name }}
+            </button>
+        </div>
+    </div>
+
+    <div class="flotChart plotcanvas"></div>
+
+    <div class="tooltip"></div>
+</div>
