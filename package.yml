@@ -1,0 +1,5 @@
+name: GenDex
+modules:
+    - volcano
+    - mds
+version: 1.0.0
