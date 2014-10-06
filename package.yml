@@ -1,4 +1,4 @@
-name: GenDex
+title: GenDex
 modules:
     - volcano
     - mds
