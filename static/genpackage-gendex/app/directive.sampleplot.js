@@ -9,18 +9,18 @@ angular.module('gendex.widgets')
         },
         replace: false,
         templateUrl: '/static/genpackage-gendex/partials/directives/sampleplot.html',
-        controller: ['$scope', '$attrs', '$element', function ($scope, $attrs, $element) {
-            // console.log('inside sampleplot ctrl');
-
-            var flotElem = $element.find('div.flotChart');
+        controller: ['$scope', '$attrs', '$element', '$timeout', 'cachedThrottle', function ($scope, $attrs, $element, $timeout, cachedThrottle) {
+            console.log('inside sampleplot ctrl');
+            var flotElem = $element.find('div.flotChartMds');
+            var ltcc = 0;
 
             $scope.norms = {
                 all: [
-                    { name: 'Manhattan', norm: _.compose(numeric.sum, numeric.abs) },
                     { name: 'Euclidean', norm: numeric.norm2   },
                     { name: 'Maximum',   norm: numeric.norminf }
                 ],
-                selected: null
+                selected: null,
+                disabled: true
             };
             $scope.norms.selected = $scope.norms.all[1];
 
@@ -40,7 +40,7 @@ angular.module('gendex.widgets')
                     }
                 }
 
-                var ret = numeric.svd(M), //TODO: this is throwing "Error: no convergence."
+                var ret = numeric.svd(M),
                     eigenValues = numeric.sqrt(ret.S);
                 return ret.U.map(function(row) {
                     return numeric.mul(row, eigenValues).splice(0, dimensions);
@@ -48,15 +48,13 @@ angular.module('gendex.widgets')
             }
 
             $scope.replot = function () {
-                // console.log('replot sampleplot');
-
-                var columns = ['lt1c', 'lt2c', 'lt3c', 'lt1p', 'lt2p', 'lt3p'],
+                $scope.norms.disabled = false;
+                var columns = $scope.shared.sampleCols,
                     vectors = {};
 
                 angular.forEach(columns, function (col) {
-                    vectors[col] = _.pluck($scope.shared.filteredRows, col);
+                    vectors[col] = _.pluck($scope.shared.selectedGenes, col);
                 });
-
                 var distFn = _.compose($scope.norms.selected.norm, numeric.sub);
 
                 var distances = [];
@@ -77,8 +75,9 @@ angular.module('gendex.widgets')
                 var coordinates = mds(distances);
 
                 var newSize = {
-                    width: $element.width(),
-                    height: $element.width()
+                    width: $element.parent().width() - 30,
+                    height: $element.parent().height() - $element.find('.widgetControls').height() -
+                            $element.parents('.windowContent').siblings('.graphHandle').height()
                 };
 
                 var flotOptions = {
@@ -100,54 +99,73 @@ angular.module('gendex.widgets')
                             left: 1
                         }
                     },
-                    xaxis: {
-                        show: false
-                    },
-                    yaxis: {
-                        show: false
-                    }
+                    xaxes: [{
+                        axisLabel: '', // TODO: Set or delete
+                    }],
+                    yaxes: [{
+                        axisLabel: '', // TODO: Set or delete
+                    }],
                 };
 
                 flotElem.css(newSize);
 
+                // draw
                 var flotPlot;
-                try{
-                    flotPlot = $.plot(flotElem, [{data: coordinates.splice(0,3), color: 'red'}, {data: coordinates, color: 'blue'}], flotOptions);
-                } catch (err) {}
+                
+                $timeout(function () { //end of transition/animation
+                    try {
+                        for (var i = 0; i < columns.length; i++) if (/c/i.test(columns[i])) ltcc++;
+                        flotPlot = $.plot(flotElem, [{data: coordinates.splice(0, ltcc), color: 'red'}, {data: coordinates, color: 'blue'}], flotOptions);
+                        ltcc = 0;
+                    } catch (err) {}
+                }, 200);
             };
 
-            var tooltipElem = $element.find('div.tooltip');
-            flotElem.bind("plothover", function (event, pos, item) {
-                if (item) {
+            var delayedReplot = _.debounce($scope.replot, 200);
 
-                    var text;
-                    if (item.seriesIndex == 0) {
-                        switch (item.dataIndex) {
-                            case 0: text = "LT1C"; break;
-                            case 1: text = "LT2C"; break;
-                            case 2: text = "LT3C"; break;
-                        }
-                    } else {
-                        switch (item.dataIndex) {
-                            case 0: text = "LT1P"; break;
-                            case 1: text = "LT2P"; break;
-                            case 2: text = "LT3P"; break;
+            $scope.$watch('shared.selectedGenes', function () {
+                if (!_.isEmpty($scope.shared.sampleCols)) delayedReplot();
+            });
+
+            $scope.$watch(cachedThrottle($scope, function () {
+                return $element.width() + ',' + $element.height();
+            }, 200), function (v) {
+                if (!_.isEmpty($scope.shared.sampleCols)) delayedReplot();
+            });
+
+            function tooltips() {
+                var tooltipAppendTo = flotElem;
+
+                /** Tooltip for selected points on hover */
+                var tooltipElemSelected = null;
+                var contentElemSelected = null;
+                $scope.hoveredItem = null;
+                flotElem.on("plothover", function (event, pos, item) {
+                    $scope.hoveredItem = item;
+                    if(!item || flotElem.data('dragging')){
+                        if(tooltipElemSelected){
+                            flotDestroyTooltip(tooltipElemSelected);
+                            tooltipElemSelected = null;
                         }
                     }
+                    else {
+                        if (!tooltipElemSelected) {
+                            tooltipElemSelected = flotCreateTooltip(tooltipAppendTo);
+                            contentElemSelected = tooltipElemSelected.find('.content');
+                        }
 
-                    var x = pos.pageX - $element.position().left,
-                        y = pos.pageY - $element.position().top;
-                    tooltipElem.html(text);
-                    tooltipElem.css({top: y-20, left: x});
-                    tooltipElem.fadeIn(200);
-                } else {
-                    tooltipElem.hide();
-                }
-            });
-
-            $scope.$watch("shared.filteredRows", function () {
-                $scope.replot();
-            });
+                        var tooltipText;
+                        if (item.seriesIndex == 0) {
+                            tooltipText = ['LT', item.dataIndex + 1, 'C'].join('');
+                        }
+                        else {
+                            tooltipText = ['LT', item.dataIndex + 1, 'P'].join('');
+                        }
+                        flotMoveTooltip(tooltipAppendTo, pos.pageX, pos.pageY, tooltipElemSelected, contentElemSelected, tooltipText);
+                    }
+                });
+            }
+            tooltips();
         }]
     };
 });
