@@ -20,12 +20,12 @@ angular.module('gendex.widgets')
 
             $scope.replot = function () {
                 // console.log('replot genplot');
-                if (!$scope.shared.filteredRows) return;
+                if (!$scope.shared.selectedGenes) return;
 
                 xAxis = 'logcpm';
                 yAxis = $scope.selectedGraph == 1 ? 'fdr' : 'logfc';
-                xValues = _.pluck($scope.shared.filteredRows, xAxis);
-                yValues = _.pluck($scope.shared.filteredRows, yAxis);
+                xValues = _.pluck($scope.shared.selectedGenes, xAxis);
+                yValues = _.pluck($scope.shared.selectedGenes, yAxis);
 
                 var newSize = {
                     width: $element.width(),
@@ -91,7 +91,7 @@ angular.module('gendex.widgets')
                 if (item) {
                     var x = pos.pageX - $element.position().left,
                         y = pos.pageY - $element.position().top;
-                    tooltipElem.html($scope.shared.filteredRows[item.dataIndex]['gene']);
+                    tooltipElem.html($scope.shared.selectedGenes[item.dataIndex]['gene']);
                     tooltipElem.css({top: y-20, left: x});
                     tooltipElem.fadeIn(200);
                 } else {
@@ -99,10 +99,10 @@ angular.module('gendex.widgets')
                 }
             });
 
-            $scope.$watch("shared.filteredRows", function () {
+            // example: directive.sampleplot
+            $scope.$watch("shared.selectedGenes", function () {
                 $scope.replot();
             });
-
         }]
     };
 });

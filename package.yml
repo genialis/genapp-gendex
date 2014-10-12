@@ -1,5 +1,5 @@
 title: GenDex
 modules:
-    - volcano
-    - mds
+    - DifferentialExpressionAnalysis
+    - MDS
 version: 1.0.0
