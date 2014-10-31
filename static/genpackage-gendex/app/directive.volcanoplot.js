@@ -95,9 +95,7 @@ angular.module('gendex.widgets')
                 };
 
                 $scope.$watch('refreshingData', function (val) {
-                    //getting to <window> scope...
-                    $element.parent().scope().$emit( val ? 'dimOn' : 'dimOff' );
-                    $element.parent().scope().$emit( val ? 'loadOn' : 'loadOff' );
+                    $scope.windowCtrl.loading(val);
                 });
 
 
@@ -108,6 +106,10 @@ angular.module('gendex.widgets')
                 });
 
             }
-        ]
+        ],
+        require: '^window',
+        link: function (scope, elem, attr, ctrl) {
+            scope.windowCtrl = ctrl;
+        }
     };
 });
