@@ -142,10 +142,5 @@ angular.module('gendex.controllers', [])
                 localStorage.genexpressWindowsInfo = JSON.stringify(windowsInfo);
             }
         }, true);
-
-        $scope.$root.objectKeys = function (obj) {
-            return _.keys(obj);
-        };
-
 	}])
 ;
