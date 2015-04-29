@@ -3,9 +3,10 @@
 # =====================
 ---
 
-- name: gendex:processor-0-1
+- name: gendex:processor
+  version: 1.0.0
   label: Processor Label
-  type: gendex:subtype
+  type: data:gendex:subtype
   persistence: RAW
   description: >
     Processor description.
